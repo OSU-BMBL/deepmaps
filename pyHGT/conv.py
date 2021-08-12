@@ -23,6 +23,7 @@ class HGTConv(MessagePassing):
         self.use_norm      = use_norm
         self.use_RTE       = use_RTE
         self.att           = None
+        self.res_att        =None
         
         
         self.k_linears   = nn.ModuleList()
@@ -58,17 +59,11 @@ class HGTConv(MessagePassing):
         for m in self.modules():
             print(m)
             if isinstance(m, nn.Linear):
-                # print(m.weight.data.type())
-                # input()
-                # m.weight.data.fill_(1.0)
                 torch.nn.init.xavier_uniform_(m.weight, gain=1)
 
     
     
     def forward(self, node_inp, node_type, edge_index, edge_type, edge_time):
-        #print("fffffffffffffffffff")
-        #print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
-        #print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')
         return self.propagate(edge_index, node_inp=node_inp, node_type=node_type, \
                               edge_type=edge_type, edge_time = edge_time)
 
@@ -80,7 +75,7 @@ class HGTConv(MessagePassing):
         '''
             Create Attention and Message tensor beforehand.
         '''
-        res_att     = torch.zeros(data_size, self.n_heads).to(node_inp_i.device)
+        self.res_att     = torch.zeros(data_size, self.n_heads).to(node_inp_i.device)
         res_msg     = torch.zeros(data_size, self.n_heads, self.d_k).to(node_inp_i.device)
         
         for source_type in range(self.num_types):
@@ -111,7 +106,7 @@ class HGTConv(MessagePassing):
                     q_mat = q_linear(target_node_vec).view(-1, self.n_heads, self.d_k)
                     k_mat = k_linear(source_node_vec).view(-1, self.n_heads, self.d_k)
                     k_mat = torch.bmm(k_mat.transpose(1,0), self.relation_att[relation_type]).transpose(1,0)
-                    res_att[idx] = (q_mat * k_mat).sum(dim=-1) * self.relation_pri[relation_type] / self.sqrt_dk
+                    self.res_att[idx] = (q_mat * k_mat).sum(dim=-1) * self.relation_pri[relation_type] / self.sqrt_dk
                     '''
                         Step 2: Heterogeneous Message Passing
                     '''
@@ -120,24 +115,9 @@ class HGTConv(MessagePassing):
         '''
             Softmax based on target node's id (edge_index_i). Store attention value in self.att for later visualization.
         '''
-        #print("res_msg ",res_msg )
-        #print("res_msg ",softmax(res_att, edge_index_i))
-        #print("res_msg ",res_msg.shape )
-        #print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
-        #print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')
-        #print("res_msg ",softmax(res_att, edge_index_i).shape)
-       # print(res_msg * softmax(res_att, edge_index_i).view(-1, self.n_heads, 1))
-        #del q_mat,k_mat,k_linear,v_linear
-       # torch.cuda.empty_cache()
-        #print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
-        #print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')
-        # self.att =softmax(res_att, edge_index_i)
-        res =res_msg * softmax(res_att, edge_index_i).view(-1, self.n_heads, 1)
-        #print("aaaaaaaaaa",res.shape)
-        torch.cuda.empty_cache()
-        # res = res_msg * self.att.view(-1, self.n_heads, 1)
-        #print("mmmmmmmmmmmmmmmmmmmm")
-        del res_att, res_msg
+        self.att = self.res_att
+        #self.att =softmax(self.res_att, edge_index_i)
+        res =res_msg * softmax(self.res_att, edge_index_i).view(-1, self.n_heads, 1)
 
         return res.view(-1, self.out_dim)
 
@@ -273,7 +253,8 @@ class DenseHGTConv(MessagePassing):
         '''
             Softmax based on target node's id (edge_index_i). Store attention value in self.att for later visualization.
         '''
-        self.att = softmax(res_att, edge_index_i)
+        self.att=res_att
+        #self.att = softmax(res_att, edge_index_i)
         res = res_msg * self.att.view(-1, self.n_heads, 1)
         del res_att, res_msg
         return res.view(-1, self.out_dim)
@@ -335,6 +316,7 @@ class GeneralConv(nn.Module):
     def __init__(self, conv_name, in_hid, out_hid, num_types, num_relations, n_heads, dropout, use_norm = True, use_RTE = True):
         super(GeneralConv, self).__init__()
         self.conv_name = conv_name
+        self.res_att = None
         if self.conv_name == 'hgt':
             self.base_conv = HGTConv(in_hid, out_hid, num_types, num_relations, n_heads, dropout, use_norm, use_RTE)
         elif self.conv_name == 'dense_hgt':
@@ -345,7 +327,9 @@ class GeneralConv(nn.Module):
             self.base_conv = GATConv(in_hid, out_hid // n_heads, heads=n_heads)
     def forward(self, meta_xs, node_type, edge_index, edge_type, edge_time):
         if self.conv_name == 'hgt':
-            return self.base_conv(meta_xs, node_type, edge_index, edge_type, edge_time)
+            a=self.base_conv(meta_xs, node_type, edge_index, edge_type, edge_time)
+            self.res_att = self.base_conv.res_att
+            return a
         elif self.conv_name == 'gcn':
             return self.base_conv(meta_xs, edge_index)
         elif self.conv_name == 'gat':
