@@ -371,13 +371,13 @@ gene_cell = gene_cell.astype('float')
 # gene_cell=gene_cell[0:1000,:]
 # cpu/gpu
 cuda = args.cuda  # 'cpu'#-1
-if cuda == 0:
-    device = torch.device("cuda:" + "0")
-    print("cuda>>>")
-else:
+if cuda == "cpu":
     device = torch.device("cpu")
-print(device)
+else:
+    device = torch.device("cuda:" + str(cuda))
+    print("cuda>>>")
 
+print(device)
 
 debuginfoStr('scRNA has been successfully loaded')
 
@@ -475,8 +475,7 @@ x = {'gene': torch.tensor(encoded, dtype=torch.float),
      }
 #x = torch.tensor(np.random.randn(len(target_nodes),64), dtype=torch.float)
 #h = Data(edge_index_dict=edge_index, x=x)
-edge_index_dict = {('gene', 'g_c', 'cell')
-                    : torch.tensor([g, c], dtype=torch.float)}
+edge_index_dict = {('gene', 'g_c', 'cell')                   : torch.tensor([g, c], dtype=torch.float)}
 edge_reltype = {
     ('gene', 'g_c', 'cell'):  torch.tensor([g, c]).shape[1]
 }
@@ -783,10 +782,8 @@ with torch.no_grad():
         x = {'gene': torch.tensor(encoded[i:(ba+i), :], dtype=torch.float),
              'cell': torch.tensor(encoded2, dtype=torch.float),
              }  # batch of gene all cells
-        edge_index_dict = {('gene', 'g_c', 'cell')
-                            : torch.tensor([g, c], dtype=torch.long)}
-        edge_reltype = {('gene', 'g_c', 'cell')
-                         :  torch.tensor([g, c]).shape[1]}
+        edge_index_dict = {('gene', 'g_c', 'cell')                           : torch.tensor([g, c], dtype=torch.long)}
+        edge_reltype = {('gene', 'g_c', 'cell')                        :  torch.tensor([g, c]).shape[1]}
         num_nodes_dict = {'gene': adj.shape[0], 'cell': gene_cell.shape[1]}
         data = Data(edge_index_dict=edge_index_dict,
                     edge_reltype=edge_reltype, num_nodes_dict=num_nodes_dict, x=x)
@@ -846,7 +843,7 @@ print(args1)
 print(args2)
 print(args3)
 print(args4)
-path = "/fs/ess/PCON0022/jyx/raw/ari.R"
+path = "/home/wan268/deepmaps/hgt-deepmaps/ari.R"
 cmd = [command, path, args1, args2, args3, args4]
 print(cmd)
 xy = subprocess.check_output(cmd, universal_newlines=True)
