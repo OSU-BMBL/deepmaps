@@ -10,9 +10,10 @@ If you have any questions or feedback, please contact Qin Ma <qin.ma@osumc.edu>.
 python: 3.8.5
 pytorch: 1.9.1
 torch-geometric: 2.0.1
-NVIDIA-SMI 450.102.04  
-Driver Version: 450.102.04   
+NVIDIA Driver Version: 450.102.04   
 CUDA Version: 11.0
+GPU: 2x A100-PCIE-40GB
+System: Red Hat Enterprise Linux release 8.3 (Ootpa)
 ```
 
 ## How to install
