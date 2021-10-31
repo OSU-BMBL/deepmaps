@@ -2,7 +2,7 @@
 
 This is the repository for the manuscript: todo. 
 
-If you have any questions or feedback regarding this notebook, please contact Qin Ma <qin.ma@osumc.edu>.
+If you have any questions or feedback, please contact Qin Ma <qin.ma@osumc.edu>.
 
 ## Dev environment
 
