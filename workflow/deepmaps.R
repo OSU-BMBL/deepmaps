@@ -123,7 +123,7 @@ readmatrix <- function(rna_matrix, atac_matrix, min_cell = 0.1) {
 # Filter abnormal cells
 ##' Filter abnormal cells
 #input:
-# 1 - obj: a seurat object 
+# 1 - obj: a seurat object
 # 2 - nmad: a numeric scalar, specifying the minimum number of MADs away from median required for a value to be called an outlier
 # output:
 # a seurat object
@@ -158,10 +158,10 @@ filterCell <- function(obj, nmad = 3) {
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-##' Calculate gene active score matrix 
+##' Calculate gene active score matrix
 # input:
 # 1 - peak_count_matrix: a peak_count matrix from scATAC-seq with peak * cell which return from filterCell function
-# 2 - organism: species type GRCh38 / GRCm38 
+# 2 - organism: species type GRCh38 / GRCm38
 # output:
 # a gene * peak matrix, the elements represent the regulatory potential for peak to gene
 
@@ -183,7 +183,7 @@ CalGenePeakScore <-
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-##' Calculate gene active score matrix 
+##' Calculate gene active score matrix
 #input:
 # 1 - ATAC_gene_peak: a matrix with gene * peak which return from CalGenePeakScore fucntion
 # 2 - obj: a seurat object after data preprocessing which return from filterCell function
@@ -221,15 +221,20 @@ calculate_GAS <-
     print(str(peak_count))
     if (method == "velo") {
       velo <- read.csv(veloPath, header = TRUE)
-      velo <- as.matrix(velo)
+      ##remove duplicated rows with same gene
+      if (length(which(duplicated.default(velo[, 1]))) > 0) {
+        velo <- velo[-which(duplicated.default(velo[, 1]) == T),]
+      }
+      
+      ##Filter rows if gene name equals to NA
+      if (length(which(is.na(velo[, 1]))) > 0) {
+        velo <- velo[-which(is.na(velo[, 1])),]
+      }
       rownames(velo) <- velo[, 1]
-      velo <- velo[, -1]
-      colnames(velo) <- gsub("-", ".", colnames(velo))
-      vv <- matrix(as.numeric(velo), dim(velo)[1], dim(velo)[2])
-      rownames(vv) <- rownames(velo)
-      colnames(vv) <- colnames(velo)
-      velo <- vv
-      rm(vv)
+      velo <- velo[,-1]
+      velo <- as.matrix(velo)
+      #colnames(velo) <- gsub("-", ".", colnames(velo))
+      colnames(velo) <- gsub("\\.", "-", colnames(velo))
       rna <- gene_count
       atac <- peak_count
       velo <-
@@ -240,7 +245,6 @@ calculate_GAS <-
         atac[intersect(rownames(rna), rownames(velo)), intersect(colnames(rna), colnames(velo))]
       gene_rowsum <- gene_rowsum[rownames(rna)]
       peak_rowsum <- peak_rowsum[rownames(rna)]
-      str(velo)
       
       genes <- dim(velo)[1]
       cells <- dim(velo)[2]
@@ -264,15 +268,17 @@ calculate_GAS <-
       gene_nega_num <- rowSums(velo < 0)
       
       # weights
-      weights = ((rank_cell ^ 2 + rank_gene ^ 2) / ((t((t(velo > 0)) * cell_posi_num + (t(velo <
-                                                                                            0)) * cell_nega_num
-      )) ^ 2 + ((velo > 0) * gene_posi_num + (velo < 0) * gene_nega_num
-      ) ^ 2 + (velo == 0))) ^ 0.5
+      weights <-
+        ((rank_cell ^ 2 + rank_gene ^ 2) / ((t((t(velo > 0)) * cell_posi_num + (t(velo <
+                                                                                    0)) * cell_nega_num
+        )) ^ 2 + ((velo > 0) * gene_posi_num + (velo < 0) * gene_nega_num
+        ) ^ 2 + (velo == 0))) ^ 0.5
       weights[velo < 0] = weights[velo < 0] * (-1)
       
       # GAS
-      GAS = rna * gene_rowsum + ((1 + weights) * atac) * ((1 + weights) *
-                                                            peak_rowsum)
+      GAS <-
+        rna * gene_rowsum + ((1 + weights) * atac) * ((1 + weights) *
+                                                        peak_rowsum)
     }
     if (method == "wnn") {
       obj <- obj[, colnames(gene_count)]
@@ -375,8 +381,8 @@ get_gene_module <-
 # gene module save
 #input:
 # 1 - co: the active gene module from get_gene_module function
-# 2 - lisa_path: the path of active gene module to save 
-#result 
+# 2 - lisa_path: the path of active gene module to save
+#result
 # write gene module to the lisa_path
 
 write_GM <- function(co, lisa_path) {
@@ -411,10 +417,10 @@ write_GM <- function(co, lisa_path) {
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-# Filter gene with no accessible peak in promoter 
+# Filter gene with no accessible peak in promoter
 # input:
 # 1 - obj: a seurat object which return from filterCell function
-# 2 - gene_peak: a matrix with gene * peak from scATAC-seq which return from filterCell function 
+# 2 - gene_peak: a matrix with gene * peak from scATAC-seq which return from filterCell function
 # 3 - GAS: the GAS matrix with gene * cell which return calculate_GAS function
 # 4 - species: human / mouse
 #output:
@@ -471,13 +477,13 @@ AccPromoter <- function(obj, gene_peak, GAS, species = "human") {
 ##' infer ct active regulons
 # input:
 # 1 - GAS: the GAS matrix with gene * cell which return calculate_GAS function
-# 2 - co: a list of bio network which reture from gene_ function 
+# 2 - co: a list of bio network which reture from gene_ function
 # 3 - gene_peak_pro: the matrix with gene * peak which return AccPromoter function
 # 4 - species: human / mouse (human = "hg38", mouse = "mm10" )
 # 5 - humanPath: if speices == human, the TF binding RData absolute path of hg38 should be provided
 # 6 - mousePath: if speices == mouse, the TF binding RData absolute path of mm10 should be provided
 #output:
-# 1 - BA_score a TF binding affinity matrix with TF * peak, the elements in the matrix is the binding power of TF to peak 
+# 1 - BA_score a TF binding affinity matrix with TF * peak, the elements in the matrix is the binding power of TF to peak
 # 2 - ct_regulon: candidate cell type active regulon
 # 3 - TFinGAS: TRUE / FALSE, if number of the intersection of candidate TF from LISA and gene in GAS > 50 TFinGAS will be true, else it will be false
 
@@ -700,7 +706,7 @@ RI_cell <-
 # calculate regulon active score in cell level / cell type level
 # input:
 # 1 - RI_C: a regulatory intensive matrix with TF-gene pair * cell, the element means the intensity of TF to gene in each cell
-# 2 - ct_regulon: cell type active regulon 
+# 2 - ct_regulon: cell type active regulon
 # 3 - graph.out: a factor variable. The cell cluster which return from get_gene_module function
 # 4 - TFinGAS: TRUE / FALSE, if number of the intersection of candidate TF from LISA and gene in GAS > 50 TFinGAS will be true, else it will be false which return from Calregulon function
 #output:
@@ -781,7 +787,7 @@ calRAS <- function(RI_C, ct_regulon, graph.out) {
 # calculate regulon active score in cell level / cell type level
 # input:
 # 1 - ct_regulon: a matrix with gene * peak from scATAC-seq which return from get_gene_module function
-# 2 - graph.out: a factor variable. The predict cell cluster which return from get_gene_module function 
+# 2 - graph.out: a factor variable. The predict cell cluster which return from get_gene_module function
 #output:
 # 1 - RAS_C1: a matrix with regulon-CT * cell. Regulon active score in cell type level
 
@@ -807,7 +813,7 @@ CalRAS2 <- function(ct_regulon, graph.out) {
 #find master TF and master gene, build a cell type gene regulatory network
 #input:
 # 1 - ct_regulon: cell type active regulon
-# 2 - RI_CT: regulatory intensive score in cell type level which return from calRAS funciton 
+# 2 - RI_CT: regulatory intensive score in cell type level which return from calRAS funciton
 #output:
 # 1 - TF_cen: TF centrality score in each CT
 # 2 - gene_cen: gene centrality score in each CT
@@ -866,9 +872,9 @@ masterFac <- function(ct_regulon, RI_CT) {
 #find master TF and master gene, build a cell type gene regulatory network
 #input:
 # 1 - RAS_C1: a matrix with regulon-CT * cell. Regulon active score in cell type level
-# 2 - graph.out: a factor variable. The predict cell cluster which return from get_gene_module function 
+# 2 - graph.out: a factor variable. The predict cell cluster which return from get_gene_module function
 #output:
-# 1 - DR: differnent regulons. 
+# 1 - DR: differnent regulons.
 
 calDR <-
   function(RAS_C1,
