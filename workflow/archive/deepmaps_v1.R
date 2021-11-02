@@ -23,7 +23,7 @@ library(Seurat)
 library(scater)
 library(Signac)
 library(MAESTRO)
-library(reticulate)
+
 ## ----------------------------------------------------------------------------------------------------------------
 
 #knitr::purl('deepmaps.rmd')
@@ -32,12 +32,18 @@ library(reticulate)
 
 ## ----------------------------------------------------------------------------------------------------------------
 # Read 10X data
-##' Read matched scRNA + scATAC data from H5 file
-#input:
-# 1 - h5Path: the path of h5 file
-# 2 - min_cell: the peak / gene will be removed if the value in the gene / peak with more than min_cell cell is equal to zero
-#output:
-#a seurat object
+##' Read matched data from 10X
+##'
+##' @param h5 the file path of h5 data containing the scATAC-seq and scRNA-seq
+##' return a S4 containing scATAC-seq and scRNA-seq information
+##' @importFrom Seurat
+##' @importFrom Signac
+##' @importFrom GenomicRanges
+##' @importFrom GenomeInfoDb
+##' @importFrom EnsDb.Hsapiens.v86
+##' @importFrom IRanges
+##' @importFrom rtracklayer
+##' @export
 Read10Xdata <-
   function(h5Path,
            annoObj = NULL,
@@ -51,7 +57,7 @@ Read10Xdata <-
       StringToGRanges(rownames(atac_counts), sep = c(":", "-"))
     grange.use <-
       seqnames(grange.counts) %in% standardChromosomes(grange.counts)
-    atac_counts <- atac_counts[as.vector(grange.use),]
+    atac_counts <- atac_counts[as.vector(grange.use), ]
     chrom_assay <- CreateChromatinAssay(
       counts = atac_counts,
       sep = c(":", "-"),
@@ -60,27 +66,20 @@ Read10Xdata <-
       annotation = anno
       #min.feature = 300,
     )
-    tmp_obj <- CreateSeuratObject(counts = chrom_assay,
-                                  assay = "ATAC",)
+    
+    #ncol(atac_counts)
+    pbmc <- CreateSeuratObject(counts = chrom_assay,
+                               assay = "ATAC", )
     exp_assay <-
       CreateAssayObject(counts = rna_counts,
                         min.cells = ncol(rna_counts) * min_cell)
-    tmp_obj[["RNA"]] <- exp_assay
-    DefaultAssay(tmp_obj) <- "RNA"
-    tmp_obj[["percent.mt"]] <-
-      PercentageFeatureSet(tmp_obj, pattern = "^MT-")
-    return (tmp_obj)
+    pbmc[["RNA"]] <- exp_assay
+    DefaultAssay(pbmc) <- "RNA"
+    pbmc[["percent.mt"]] <-
+      PercentageFeatureSet(pbmc, pattern = "^MT-")
+    return (pbmc)
   }
 
-
-# Read data with matrix format
-##' Read matched scRNA+scATAC data from matrix format
-#input:
-# 1 - rna_matrix: an expression matrix with gene * cell
-# 2 - atac_matrix: an accessibility matrix with peak * cell
-# 3 - min_cell: the peak/gene will be removed if the value in the gene/peak with more than min_cell cell is equal to zero
-#output:
-#a seurat object
 readmatrix <- function(rna_matrix, atac_matrix, min_cell = 0.1) {
   rna_matrix <-
     rna_matrix[, intersect(colnames(atac_matrix), colnames(rna_matrix))]
@@ -90,11 +89,10 @@ readmatrix <- function(rna_matrix, atac_matrix, min_cell = 0.1) {
     StringToGRanges(rownames(atac_matrix), sep = c(":", "-"))
   grange.use <-
     seqnames(grange.counts) %in% standardChromosomes(grange.counts)
-  atac_matrix <- atac_matrix[as.vector(grange.use),]
-  atac_matrix <-
-    atac_matrix[lengths(strsplit(gsub(":", "-", rownames(atac_matrix)) , split = "-")) ==
-                  3, ]
-  rna_matrix <- rna_matrix[unique(rownames(rna_matrix)), ]
+  atac_matrix <- atac_matrix[as.vector(grange.use), ]
+  #atac_matrix<-atac_matrix[lengths(strsplit( gsub(":", "-", rownames(atac_matrix)) , split = "-"))==3,]
+  #rna_matrix<-rna_matrix[grepl("*RNA*",rna_gene$V2[-1]),]
+  rna_matrix <- rna_matrix[unique(rownames(rna_matrix)),]
   #cell_type<-rna_cell$V7[-1][grepl("*RNA*",rna_gene$V2[-1])]
   #min_cell=0.01
   chrom_assay <- CreateChromatinAssay(
@@ -104,7 +102,7 @@ readmatrix <- function(rna_matrix, atac_matrix, min_cell = 0.1) {
     #fragments = fragments,
     min.cells = ncol(atac_matrix) * min_cell,
     #min.feature = 300,
-    #annotation = annotations
+    #annotation = annotations,
   )
   obj <- CreateSeuratObject(counts = chrom_assay,
                             assay = "ATAC")
@@ -122,12 +120,12 @@ readmatrix <- function(rna_matrix, atac_matrix, min_cell = 0.1) {
 ## ----------------------------------------------------------------------------------------------------------------
 # Filter abnormal cells
 ##' Filter abnormal cells
-#input:
-# 1 - obj: a seurat object 
-# 2 - nmad: a numeric scalar, specifying the minimum number of MADs away from median required for a value to be called an outlier
-# output:
-# a seurat object
-
+##'
+##' @param obj: a seurat object
+##' @param nmad: a numeric scalar, specifying the minimum number of MADs away from median required for a value to be called an outlier
+##' return a seurat object with cell filtering
+##' @importFrom Seurat
+##' @importFrom scater
 filterCell <- function(obj, nmad = 3) {
   atac <- isOutlier(obj$nCount_ATAC,
                     nmads = nmad,
@@ -158,13 +156,13 @@ filterCell <- function(obj, nmad = 3) {
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-##' Calculate gene active score matrix 
-# input:
-# 1 - peak_count_matrix: a peak_count matrix from scATAC-seq with peak * cell which return from filterCell function
-# 2 - organism: species type GRCh38 / GRCm38 
-# output:
-# a gene * peak matrix, the elements represent the regulatory potential for peak to gene
-
+##' Calculate gene active score matrix
+##'
+##' @param peak_count_matrix a peak_count matrix from scATAC-seq with rownames peak, colnames cell
+##' @param organism species human:GRCh38/mouse:GRCm38
+##' return a gene_peak matrix, the elements represent the regulatory potential
+##' @importFrom MAESTRO
+##' @export
 CalGenePeakScore <-
   function(peak_count_matrix, organism = "GRCh38") {
     pbmc_peak <- peak_count_matrix
@@ -183,16 +181,17 @@ CalGenePeakScore <-
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-##' Calculate gene active score matrix 
-#input:
-# 1 - ATAC_gene_peak: a matrix with gene * peak which return from CalGenePeakScore fucntion
-# 2 - obj: a seurat object after data preprocessing which return from filterCell function
-# 3 - method: the method to integrate scRNA-seq and scATAC-seq velo (velocity) / WNN (weighted nearest neighbor)
-# 4 - veloPath: if use velocity method, the veloPath should be provided
-#output:
-# GAS matrix with gene * peak, the elements represent the gene activity score in each cell
-# a gene * peak matrix, the elements represent the regulatory potential for peak to gene
+##' Calculate gene active score matrix
+##'
+##' @param ATAC_gene_peak: gene_peak matrix from RP_model
+##' @param kindey: seurat object
+##' @param method: velo,wnn
+##' @param veloPath: the path of velo.csv
+##' return a GAS matrix
+##' @export
 
+#output:
+#GAS matrix (gene*cell)
 calculate_GAS <-
   function(ATAC_gene_peak,
            obj,
@@ -202,14 +201,14 @@ calculate_GAS <-
     gene_count <- obj@assays$RNA@counts
     peak_count[peak_count > 0] = 1
     WA <- ATAC_gene_peak %*% peak_count
-    WA <- WA[which(rowSums(as.matrix(WA)) > 0), ]
+    WA <- WA[which(rowSums(as.matrix(WA)) > 0),]
     gene_count <-
-      gene_count[which(rowSums(as.matrix(gene_count)) > 0), ]
+      gene_count[which(rowSums(as.matrix(gene_count)) > 0),]
     commongene <-
       intersect(x = rownames(WA), y = rownames(gene_count))
     WA <- as.matrix(WA)
-    WA <- WA[commongene, ]
-    gene_count <- gene_count[commongene, ]
+    WA <- WA[commongene,]
+    gene_count <- gene_count[commongene,]
     gene_rowsum <- rowSums(gene_count)
     peak_rowsum <- rowSums(WA)
     norm_gene_count <- gene_count / rowSums(gene_count)
@@ -223,11 +222,34 @@ calculate_GAS <-
       velo <- read.csv(veloPath, header = TRUE)
       velo <- as.matrix(velo)
       rownames(velo) <- velo[, 1]
-      velo <- velo[, -1]
-      colnames(velo) <- gsub("-", ".", colnames(velo))
+      velo <- velo[,-1]
+      colnames(velo) <- gsub("\\.", "-", colnames(velo))
       vv <- matrix(as.numeric(velo), dim(velo)[1], dim(velo)[2])
       rownames(vv) <- rownames(velo)
       colnames(vv) <- colnames(velo)
+      ############
+      #vv<-vv[-736,]
+      #colnames(vv)<-unlist(strsplit(colnames(vv),"[.]"))[seq(2,length(unlist(strsplit(colnames(vv),"[.]"))),4)]
+      ##############
+      #a<-unlist(strsplit(colnames(vv),"_"))[seq(6,length(unlist(strsplit(colnames(vv),"_"))),7)]
+      #colnames(vv)<-unlist(strsplit(a,"[.]"))[seq(2,length(unlist(strsplit(a,"[.]"))),2)]
+      #vv<-vv[,label[,'RNA']]
+      #colnames(vv)<-label[,'label']
+      #####
+      #a<-colnames(vv)
+      #aa<-unlist(strsplit(a,split="_"))[seq(1,length(unlist(strsplit(a,split="_"))),5)]
+      #bb<-unlist(strsplit(a,split="_"))[seq(2,length(unlist(strsplit(a,split="_"))),5)]
+      #cc<-unlist(strsplit(a,split="_"))[seq(3,length(unlist(strsplit(a,split="_"))),5)]
+      #dd<-unlist(strsplit(a,split="_"))[seq(5,length(unlist(strsplit(a,split="_"))),5)]
+      #a<-paste(paste(paste(aa,bb,sep="_"),cc,sep="_"),dd,sep="_")
+      #colnames(vv) <- a
+      ######
+      #a<-unlist(strsplit(colnames(vv),"_"))[seq(6,length(unlist(strsplit(colnames(vv),"_"))),7)]
+      #a<-unlist(strsplit(a,"-"))[seq(2,length(unlist(strsplit(a,"-"))),2)]
+      #colnames(vv) <- a
+      #vv<-vv[,intersect(a,cell_name)]
+      #colnames(vv)<-paste0('cell',c(1:length(colnames(vv))))
+      ######
       velo <- vv
       rm(vv)
       rna <- gene_count
@@ -312,81 +334,81 @@ calculate_GAS <-
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-# CT active gene modules calculation
-# input:
-# 1 - GAS: a gene active matrix with gene * cell which return from calculate_GAS function
-# 2 - cell_hgt_matrixPath: the path of cell-embedding matrix which otains from HGT function
-# 3 - attPath: the path of attention matrix with gene-cell * head which obtain from HGT function
-#output:
-# 1 - co (variable 1): a biological gene module. a list with name CT-i and active gene list in CT-i
-# 2 - graph.out (variable 2): the cluster result with a factor format
+# CT active gene modules
+##' @param kindey: seurat object
+##' @param cell_hgt_matrixPath: the path of cell embedding from scHGT
+##' @param gene_hgt_matrixPath: the path of gene embedding from scHGT
+##' @param GAS: GAS matrix(gene*cell)
+##' return CT actiev gene modules
+##' @export
 
-get_gene_module <-
-  function(obj, cell_hgt_matrix, att, GAS, cutoff = 1.6) {
-    graph.out <- Idents(obj)
-    nhead <- ncol(att)
-    gene_name <- rownames(GAS)[att$gene + 1]
-    cell_name <- colnames(GAS)[att$cell + 1]
-    
-    att$ct <- graph.out[cell_name]
-    att$gene_name <- gene_name
-    att$cell_name <- cell_name
-    mod <- function(x) {
-      return(sqrt(sum(c(x ^ 2))))
-    }
-    nor <- function(x) {
-      return((x - min(x)) / (max(x) - min(x)))
-    }
-    
-    att[, 4:nhead] <- nor(att[, 4:nhead])
-    attention <-
-      aggregate(x = as.list(att[, 4:nhead]),
-                by = list(att$ct, att$gene_name),
-                mean)
-    #att[,4:nhead]<-1-att[,4:nhead]
-    weight <- apply(att[, 4:nhead], 1, mod)
-    df <-
-      data.frame(
-        'node1' = att$gene_name,
-        'node2' = att$cell_name,
-        'weight' = weight,
-        'ct' = att$ct
-      )
-    attention <-
-      aggregate(x = df$weight, by = list(df$ct, df$node1), mean)
-    co <- list()
-    for (i in (0:(length(unique(att$ct)) - 1))) {
-      t <-
-        mean(attention[attention$Group.1 == i,]$x) + 1.6 * sd(attention[attention$Group.1 ==
-                                                                          i,]$x)
-      co[[paste('ct', i, sep = "_")]] <-
-        attention[attention$Group.1 == i,]$Group.2[attention[attention$Group.1 ==
-                                                               i,]$x > t]
-    }
-    m <- list()
-    m[[1]] <- co
-    m[[2]] <- graph.out
-    return (m)
-    
+gene_module <- function(obj, cell_hgt_matrix, att, GAS) {
+  #cell_hgt_matrix <- read.table(cell_hgt_matrixPath)
+  #cell_hgt_matrix <- as.matrix(cell_hgt_matrix)
+  #rownames(cell_hgt_matrix) <- colnames(GAS)
+  
+  
+  sil1 <-
+    silhouette(as.numeric(Idents(obj)), dist(cell_hgt_matrix))
+  print(summary(sil1)$avg.width)
+  #ARI<-igraph::compare(Idents(obj),as.factor(label),method="adjusted.rand")
+  #print(ARI)
+  graph.out <- Idents(obj)
+  #att <- read.csv(attPath)
+  nhead <- ncol(att)
+  gene_name <- rownames(GAS)[att$gene + 1]
+  cell_name <- colnames(GAS)[att$cell + 1]
+  att$ct <- graph.out[cell_name]
+  att$gene_name <- gene_name
+  att$cell_name <- cell_name
+  #attention<-aggregate(x=list(att$head1,att$head2,att$head3,att$head4,att$head5,att$head6,att$head7,att$head8), by=list(att$ct,att$gene_name),mean)
+  attention <-
+    aggregate(x = as.list(att[, 4:nhead]),
+              by = list(att$ct, att$gene_name),
+              mean)
+  m <- function(x) {
+    return(length(x[x == T]) > 4)
+    #return(any(x==T))
   }
+  alpha <- function(x) {
+    return(mean(x) + 1.96 * sd(x))
+  }
+  
+  co <- list()
+  for (i in unique(att$ct)) {
+    if (!is.na(i)) {
+      #a<-unname((attention[attention$Group.1==i,][,3:10]>apply(attention[attention$Group.1==i,][,3:10],2,alpha)))[,1:8]
+      t <-
+        rowMeans(attention[attention$Group.1 == i,][, 3:ncol(attention)])
+      t <- mean(t) + 1.96 * sd(t)
+      a <-
+        unname((rowMeans(attention[attention$Group.1 == i,][, 3:ncol(attention)]) >
+                  t))
+      co[[paste('ct', i, sep = "_")]] <-
+        attention$Group.2[attention$Group.1 == i][a]
+      #co[[paste('ct',i,sep="_")]]<-attention$Group.2[attention$Group.1==i][apply(a,1,m)]
+    }
+  }
+  m <- list()
+  m[[1]] <- graph.out
+  m[[2]] <- co
+  return(m)
+}
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-# gene module save
-#input:
-# 1 - co: the active gene module from get_gene_module function
-# 2 - lisa_path: the path of active gene module to save 
-#result 
-# write gene module to the lisa_path
-
+##' @export
+#write gene module to a new fi
 write_GM <- function(co, lisa_path) {
   if (length(dir(path = lisa_path, pattern = ".csv")) >
       0) {
+    #system("rm /fs/ess/PCON0022/wxy/Lisa/*.csv ")
     system(paste0("rm ", lisa_path, "*.csv "))
     
   }
   if (length(dir(path = lisa_path, pattern = ".txt")) >
       0) {
+    #system("rm /fs/ess/PCON0022/wxy/Lisa/*.txt ")
     system(paste0("rm ", lisa_path, "*.txt "))
   }
   
@@ -408,20 +430,26 @@ write_GM <- function(co, lisa_path) {
     }
   }
 }
+#write_GM(co)
+
+
+
+
+
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-# Filter gene with no accessible peak in promoter 
-# input:
-# 1 - obj: a seurat object which return from filterCell function
-# 2 - gene_peak: a matrix with gene * peak from scATAC-seq which return from filterCell function 
-# 3 - GAS: the GAS matrix with gene * cell which return calculate_GAS function
-# 4 - species: human / mouse
-#output:
-# a matrix with gene * peak. The gene with no accessible peak will be removed
+
+##' Filter gene with no accessible peak in promoter
+##'
+##' @param peak_cell a peak_cell matrix from scATAC-seq
+##' @param species human/mouse
+##' return gene_peak matrix
+##' @export
 
 AccPromoter <- function(obj, gene_peak, GAS, species = "human") {
   peak_cell <- obj@assays$ATAC@counts
+  library(GenomicRanges)
   if (species == "human") {
     gene.ranges <- genes(EnsDb.Hsapiens.v86)
   } else{
@@ -461,7 +489,7 @@ AccPromoter <- function(obj, gene_peak, GAS, species = "human") {
   promoter_gene <-
     genebodyandpromoter.coords$gene_name[unique(over@to)]
   str(promoter_gene)
-  gene_peak <- gene_peak[promoter_gene, ]
+  gene_peak <- gene_peak[promoter_gene,]
   
   return(gene_peak)
 }
@@ -469,17 +497,11 @@ AccPromoter <- function(obj, gene_peak, GAS, species = "human") {
 
 ## ----------------------------------------------------------------------------------------------------------------
 ##' infer ct active regulons
-# input:
-# 1 - GAS: the GAS matrix with gene * cell which return calculate_GAS function
-# 2 - co: a list of bio network which reture from gene_ function 
-# 3 - gene_peak_pro: the matrix with gene * peak which return AccPromoter function
-# 4 - species: human / mouse (human = "hg38", mouse = "mm10" )
-# 5 - humanPath: if speices == human, the TF binding RData absolute path of hg38 should be provided
-# 6 - mousePath: if speices == mouse, the TF binding RData absolute path of mm10 should be provided
-#output:
-# 1 - BA_score a TF binding affinity matrix with TF * peak, the elements in the matrix is the binding power of TF to peak 
-# 2 - ct_regulon: candidate cell type active regulon
-# 3 - TFinGAS: TRUE / FALSE, if number of the intersection of candidate TF from LISA and gene in GAS > 50 TFinGAS will be true, else it will be false
+##' @param GAS: GAS matrix(gene*cell)
+##' @param co ct active gene modules
+##' @param species "hg38/mm10"
+##' return a list m[1]: TF binding affinity (TF*peak) m[2]: ct active regulon
+##' @export
 
 Calregulon <-
   function(GAS,
@@ -488,21 +510,38 @@ Calregulon <-
            speices = "hg38",
            jaspar_path = "/scratch/deepmaps/jaspar",
            lisa_path = "/home/wan268/hgt/RNA_ATAC/lymph_14k/") {
+    #enrich=T
     if (speices == "hg38") {
-      tfbs_df <- qs::qread(paste0(jaspar_path, "hg38_lisa_500.qsave"))
+      #hg38 <- readRDS("/scratch/deepmaps/hg38_lisa_400.rds")
+      #hg38<-hg38[hg38$V6>400,]
+      #a<-readRDS("/fs/ess/PCON0022/wxy/bind/hg38_lisa_500.rds")
+      #hg38 <- hg38[hg38$V6 > 500,]
+      #qs::qsave(hg38, "/scratch/deepmaps/jaspar/hg38_lisa_500.qsave")
+      #qs::qsave(peak, "/scratch/deepmaps/jaspar/hg38_lisa_500_peak.qsave")
+      #hg38 <- hg38[1:(nrow(hg38) - 1), ]
+      #peak <- data.frame(hg38$V1, hg38$V2, hg38$V3)
+      #names(peak) <- c("chromosome", 'start', 'end')
+      #peak <- GenomicRanges::makeGRangesFromDataFrame(peak)
+      peak <-
+        qs::qread(paste0(jaspar_path, "hg38_lisa_500_peak.qsave"))
+      hg38 <- qs::qread(paste0(jaspar_path, "hg38_lisa_500.qsave"))
     }
-    else {
-      tfbs_df <- readRDS("/fs/ess/PCON0022/wxy/mm10.rds")
-      tfbs_df[tfbs_df$V6 > 500, ]
+    else if (speices == "hg19") {
+      hg38 <- qs::qread(paste0(jaspar_path, "hg38_lisa_500.qsave"))
+      #hg38 <- hg38[hg38$V6 > 450,]
+    }
+    else{
+      hg38 <- readRDS("/fs/ess/PCON0022/wxy/mm10.rds")
+      hg38[hg38$V6 > 500,]
     }
     
     BA_score <-
-      matrix(0, ncol(gene_peak_pro), length(unique(tfbs_df$V4)))
-    colnames(BA_score) <- unique(tfbs_df$V4)
+      matrix(0, ncol(gene_peak_pro), length(unique(hg38$V4)))
+    colnames(BA_score) <- unique(hg38$V4)
     rownames(BA_score) <- colnames(gene_peak_pro)
     gene_TF <-
-      matrix(0, nrow(gene_peak_pro), length(unique(tfbs_df$V4)))
-    colnames(gene_TF) <- unique(tfbs_df$V4)
+      matrix(0, nrow(gene_peak_pro), length(unique(hg38$V4)))
+    colnames(gene_TF) <- unique(hg38$V4)
     rownames(gene_TF) <- rownames(gene_peak_pro)
     
     ct_subregulon <- list()
@@ -512,7 +551,7 @@ Calregulon <-
     for (i in (1:length(co))) {
       if (length(co[[i]]) > 0) {
         co[[i]] <- intersect(co[[i]], rownames(gene_peak_pro))
-        a <- which(gene_peak_pro[co[[i]], ] > 0, arr.ind = T)
+        a <- which(gene_peak_pro[co[[i]],] > 0, arr.ind = T)
         op <- colnames(gene_peak_pro)[unname(a[, 'col'])]
         peak_name <-
           op[lengths(strsplit(gsub(":", "-", op) , split = "-")) == 3]
@@ -522,18 +561,23 @@ Calregulon <-
         names(peak_name) <- c("chromosome", 'start', 'end')
         peak_name <-
           GenomicRanges::makeGRangesFromDataFrame(peak_name)
+        #peak_name :ATAC
+        #peak hg38 binding
         over <- findOverlaps(peak_name, peak)
         #print(i)
         p <- op[over@from]
-        pp <- tfbs_df$V5[over@to] / 100
-        df <- data.frame(p, pp, tfbs_df$V4[over@to])
-        hh <- df[!duplicated(df[, -2]), ]
+        pp <- hg38$V5[over@to] / 100
+        df <- data.frame(p, pp, hg38$V4[over@to])
+        hh <- df[!duplicated(df[,-2]),]
         for (k1 in (1:nrow(hh))) {
-          BA_score[hh[k1, ]$p, hh[k1, ]$tfbs_df.V4.over.to.] <- hh[k1, ]$pp
+          BA_score[hh[k1,]$p, hh[k1,]$hg38.V4.over.to.] <- hh[k1,]$pp
         }
         
         gene_TF <- gene_peak_pro %*% BA_score
-        TF <- unique(tfbs_df$V4[over@to])
+        #distinct(data.frame(p,pp,hg38$V4[over@to]),p,hg38$V4[over@to])
+        #distinct(df[!duplicated(df[,-2]),],p,hg38.V4.over.to.)
+        #names(pp)<-p
+        TF <- unique(hg38$V4[over@to])
         
         if (length(co[[i]]) < 20000 & length(co[[i]]) > 20) {
           tf <-
@@ -571,14 +615,10 @@ Calregulon <-
     return(m)
   }
 
+#ct_regulon<-ct_subregulon
+
 
 ## ----------------------------------------------------------------------------------------------------------------
-# combine same TF
-#input:
-# 1 - gene_peak_pro: a matrix with gene * peak. The gene with no accessible peak will be removed which return from AccPromoter function
-# 2 - BA_score: a TF binding affinity matrix with TF * peak, the elements in the matrix is the binding power of TF to peak which returen from Calregulon function
-#output:
-# 1 - peak_TF: a matrix with peak * TF without repeat TF
 
 uni <- function(gene_peak_pro, BA_score) {
   gene_TF <- gene_peak_pro %*% BA_score
@@ -627,17 +667,14 @@ uni <- function(gene_peak_pro, BA_score) {
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-# Regulatory Intensive (RI) score in cell level
-# input:
-# 1 - obj: a seurat object which return from filterCell function
-# 2 - ct_regulon: cell type active regulon
-# 3 - GAS: the GAS matrix with gene * cell which return calculate_GAS function
-# 4 - gene_peak_pro: the matrix with gene * peak which return from AccPromoter function
-# 5 - peak_TF: the matrix with peak * TF which return from uni function
-# 6 - graph.out: a factor variable. The predict cell cluster which return from get_gene_module function
-#output:
-# 1 - RI_C: a regulatory intensive matrix with TF-gene pair * cell, the element means the intensity of TF to gene in each cell
-
+#cell level RI score
+##' @param GAS: GAS matrix(gene*cell)
+##' @param ct_regulon: ct active regulons
+##' @param gene_peak_pro: (gene*peak)
+##' @param peak_TF: TF binding affinity (peak*TF)
+##' @param graph.out: cell cluster result
+##' return regulon intensity score of ct_regulon in cell level (TF_gene*cell)
+##' @export
 RI_cell <-
   function(obj,
            ct_regulon,
@@ -682,7 +719,7 @@ RI_cell <-
     gene_peak <- gene_peak_pro
     for (j in (1:length(graph.out))) {
       hhh <-
-        (peak_cell[, j] * gene_peak[g, ]) %*% (peak_cell[, j] * peak_TF[, t])
+        (peak_cell[, j] * gene_peak[g,]) %*% (peak_cell[, j] * peak_TF[, t])
       #hhh<-gene_peak[g,] %*%peak_TF[,t]
       bb = data.frame('gene' = g1, 'tf' = t1)
       bb$tf = as.factor(bb$tf)
@@ -697,17 +734,11 @@ RI_cell <-
     return(TG_cell)
   }
 
-# calculate regulon active score in cell level / cell type level
-# input:
-# 1 - RI_C: a regulatory intensive matrix with TF-gene pair * cell, the element means the intensity of TF to gene in each cell
-# 2 - ct_regulon: cell type active regulon 
-# 3 - graph.out: a factor variable. The cell cluster which return from get_gene_module function
-# 4 - TFinGAS: TRUE / FALSE, if number of the intersection of candidate TF from LISA and gene in GAS > 50 TFinGAS will be true, else it will be false which return from Calregulon function
-#output:
-# 1 - RAS: regulon active score in cell type level
-# 2 - RI_CT: regulatory intensive score in cell type level
-# 3 - ct-regulon: cell type active regulon
-# 4 - RAS_C: a matrix regulon-CT * cell, regulatory active score in cell level
+##' @param RI_C: regulon intensity score of ct_regulon in cell level (TF_gene*cell)
+##' @param ct_regulon: ct active regulons
+##' @param graph.out: cell cluster result
+##' return a list m, m[1] Regulon active score(regulon*CT), m[2] regulon intensity score of ct_regulon in cell type level, m[3] ct_regulon, m[4] regulon active score(regulon*Cell)
+##' @export
 
 calRAS <- function(RI_C, ct_regulon, graph.out) {
   a <- unlist(strsplit(names(ct_regulon), "_"))
@@ -724,7 +755,7 @@ calRAS <- function(RI_C, ct_regulon, graph.out) {
     unlist(strsplit(rownames(RI_C), "_"))[seq(2, length(unlist(strsplit(
       rownames(RI_C), "_"
     ))), 2)]
-  RAS_E <- RI_C * as.matrix(GAS[g, ])
+  RAS_E <- RI_C * as.matrix(GAS[g,])
   colnames(RAS_E) <- colnames(RI_C)
   #RAS_C TF(regulon)*cell
   RAS_C <-
@@ -735,8 +766,8 @@ calRAS <- function(RI_C, ct_regulon, graph.out) {
   for (i in (1:length(ct_regulon))) {
     tf <- unlist(strsplit(names(ct_regulon[i]), "_"))[1]
     #ct<-unlist(strsplit(names(ct_regulon[i]),"_"))[2]
-    RAS_C[tf, ] <-
-      colMeans(RAS_E[paste(tf, ct_regulon[[i]], sep = "_"), ])
+    RAS_C[tf,] <-
+      colMeans(RAS_E[paste(tf, ct_regulon[[i]], sep = "_"),])
   }
   
   #RAS TF*CT
@@ -772,18 +803,12 @@ calRAS <- function(RI_C, ct_regulon, graph.out) {
   
   m <- list()
   m[[1]] <- RAS
-  m[[2]] <- RI_CT[rowSums(RI_CT) > 0, ]
+  m[[2]] <- RI_CT[rowSums(RI_CT) > 0,]
   m[[3]] <- ct_re
   m[[4]] <- RAS_C
   return (m)
 }
 
-# calculate regulon active score in cell level / cell type level
-# input:
-# 1 - ct_regulon: a matrix with gene * peak from scATAC-seq which return from get_gene_module function
-# 2 - graph.out: a factor variable. The predict cell cluster which return from get_gene_module function 
-#output:
-# 1 - RAS_C1: a matrix with regulon-CT * cell. Regulon active score in cell type level
 
 CalRAS2 <- function(ct_regulon, graph.out) {
   RAS_C1 <-
@@ -794,8 +819,8 @@ CalRAS2 <- function(ct_regulon, graph.out) {
     tf <- unlist(strsplit(names(ct_regulon[i]), "_"))[1]
     ct <- unlist(strsplit(names(ct_regulon[i]), "_"))[2]
     g <- ct_regulon[[i]]
-    RAS_C1[names(ct_regulon[i]), ] <-
-      colMeans(RI_C[paste(tf, g, sep = "_"), ])
+    RAS_C1[names(ct_regulon[i]),] <-
+      colMeans(RI_C[paste(tf, g, sep = "_"),])
   }
   return(RAS_C1)
 }
@@ -804,15 +829,11 @@ CalRAS2 <- function(ct_regulon, graph.out) {
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-#find master TF and master gene, build a cell type gene regulatory network
-#input:
-# 1 - ct_regulon: cell type active regulon
-# 2 - RI_CT: regulatory intensive score in cell type level which return from calRAS funciton 
-#output:
-# 1 - TF_cen: TF centrality score in each CT
-# 2 - gene_cen: gene centrality score in each CT
-# 3 - network: adjcent matrix in a CT
-
+#master TF
+##' @param ct_regulon: ct active regulons
+##' @param RI_CT: (TF_gene*CT)
+##' return a list m, m[1] TF centrality in a CT; m[2] gene centrality in a CT; m[3] CT active network
+##' @export
 masterFac <- function(ct_regulon, RI_CT) {
   TF_CT <- unlist(strsplit(names(ct_regulon), split = "_"))
   TF <- unique(TF_CT[seq(1, length(TF_CT), 2)])
@@ -863,12 +884,7 @@ masterFac <- function(ct_regulon, RI_CT) {
 
 
 ## ----------------------------------------------------------------------------------------------------------------
-#find master TF and master gene, build a cell type gene regulatory network
-#input:
-# 1 - RAS_C1: a matrix with regulon-CT * cell. Regulon active score in cell type level
-# 2 - graph.out: a factor variable. The predict cell cluster which return from get_gene_module function 
-#output:
-# 1 - DR: differnent regulons. 
+# calculate DR
 
 calDR <-
   function(RAS_C1,
@@ -884,12 +900,12 @@ calDR <-
       #Idents(pbmc)<-graph.out
       DR <-
         FindAllMarkers(pbmc, only.pos = T, logfc.threshold = 0.25)
-      DR <- DR[DR$p_val < 0.05, ]
+      DR <- DR[DR$p_val < 0.05,]
       m <-
         unlist(strsplit(DR$gene, "-"))[seq(2, length(unlist(strsplit(DR$gene, "-"))), 2)]
       m <-
         unlist(strsplit(m, "ct"))[seq(2, length(unlist(strsplit(m, "ct"))), 2)]
-      DR <- DR[as.numeric(m) == DR$cluster, ]
+      DR <- DR[as.numeric(m) == DR$cluster,]
     } else{
       DR <-
         FindMarkers(pbmc,
@@ -940,7 +956,7 @@ cal_tfmatrixs <- function(graph.out0,
 cal_clust <- function(m) {
   a <-
     data.frame(m)[which(apply(m, 1, function(row)
-      all(row == 0)) == F), ]
+      all(row == 0)) == F),]
   if (nrow(a) > 2) {
     b <- dist(a)
     c <- hclust(b)
