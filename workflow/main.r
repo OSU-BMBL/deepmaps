@@ -100,7 +100,7 @@ obj <-
 obj <- FindClusters(obj, resolution = 0.5)
 
 #infer gene modules
-m <- gene_module(obj, cell_hgt_matrix, att, GAS)
+m <- get_gene_module(obj, cell_hgt_matrix, att, GAS)
 graph.out <- m[[1]]
 co <- m[[2]]
 
