@@ -7,6 +7,7 @@ import argparse
 parser = argparse.ArgumentParser(description='DeepMAPS - Run LISA2')
  
 parser.add_argument("--path", help="Gene module path", default="")
+parser.add_argument("--species", help="reference", default="hg38")
 args = parser.parse_args()
 
 def file_name(file_dir):
@@ -17,13 +18,18 @@ def file_name(file_dir):
                 L.append(os.path.join(root, file))
     return L
 
-
-#batch1_file = file_name('/home/wan268/deepmaps/data/lymph_14k')
 batch1_file = file_name(args.path)
 
+if args.species == "hg38":
 
-lisa_test = FromGenes('hg38', rp_map='enhanced_10K',
-                      assays=['Direct', 'DNase', 'H3K27ac'], isd_method='chipseq', verbose=1)
+    lisa_test = FromGenes('hg38', rp_map='enhanced_10K',
+                          assays=['Direct', 'DNase', 'H3K27ac'], isd_method='chipseq', verbose=1)
+elif args.species == "mm10":
+    lisa_test  = FromGenes('mm10', rp_map = 'enhanced_10K', 
+            assays = ['Direct','DNase','H3K27ac'], isd_method = 'chipseq', verbose = 1)
+else:
+    os.system.exit('Incorrect species')
+
 for i in batch1_file:
     f = open(i)
     linesList = f.readlines()
