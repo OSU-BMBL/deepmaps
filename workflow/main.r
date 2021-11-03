@@ -8,6 +8,8 @@ jaspar_path <- "/scratch/deepmaps/jaspar/"
 
 ################## Params
 base_dir <- "/home/wan268/hgt/RNA_ATAC/"
+res <- 1
+species <- "hg38"
 obj_basename <- "lymph_14k"
 anno <- qs::qread(paste0(base_dir, "hg38_annotations.qsave"))
 data_path <-
@@ -39,7 +41,7 @@ ATAC_gene_peak <-
 
 #filter gene if no accessible peak in the promoter
 gene_peak_pro <-
-  AccPromoter(obj, ATAC_gene_peak, GAS, species = "human")
+  AccPromoter(obj, ATAC_gene_peak, GAS, species = species)
 
 GAS <-
   calculate_GAS(ATAC_gene_peak, obj, method = "velo", veloPath = velo_path)
@@ -49,33 +51,37 @@ write.table(GAS, "GAS_test_output.txt")
 # After HGT is done:
 GAS_path <-
   paste0(base_dir,
-         "lymph_node_lymphoma_14k_filtered_feature_bc_matrix.txt")
+         "lym.txt")
 
 cell_hgt_matrixPath <-
-  paste0(base_dir,
-         "7_7/cell/930_n_hid_52_nheads_13_nlayers_2_lr_0.3")
+  paste0(
+    base_dir,
+    "7/cell/n_batch50_batch_size_110sample_depth_4_nheads_16_nlayers_2_sample_width_8_lr_0.2_n_hid_128_epoch_30"
+  )
 attPath <-
-  paste0(base_dir,
-         "7_7/att/gas_n_hid_52_nheads_13_nlayers_2_lr_0.3")
+  paste0(
+    base_dir,
+    "7/att/n_batch50_batch_size_110sample_depth_4_nheads_16_nlayers_2_sample_width_8_lr_0.2_n_hid_128_epoch_30"
+  )
 
 # Double check if files exist
 file.exists(cell_hgt_matrixPath)
 file.exists(attPath)
 
 ################## Step 3: clustering & generate gene modules
-
+qs::qsave(obj, paste0(base_dir, obj_basename, ".qsave"))
 #obj <- qs::qread(paste0(base_dir, obj_basename, ".qsave"))
 GAS <- read.table(GAS_path, sep = " ")
 colnames(GAS) <- str_replace_all(colnames(GAS), "\\.", "-")
 
 cell_hgt_matrix <- read.table(cell_hgt_matrixPath)
 cell_hgt_matrix <- as.matrix(cell_hgt_matrix)
-att <- read.csv(attPath)
 rownames(cell_hgt_matrix) <- colnames(GAS)
+att <- read.csv(attPath)
 
 obj <- obj[, colnames(GAS)]
 GAS <- GAS[, colnames(obj)]
-cell_hgt_matrix <- cell_hgt_matrix[colnames(GAS), ]
+cell_hgt_matrix <- cell_hgt_matrix[colnames(GAS),]
 
 HGT_embedding <-
   CreateDimReducObject(embeddings = cell_hgt_matrix,
@@ -97,12 +103,14 @@ obj <-
   FindNeighbors(obj,
                 reduction = "HGT",
                 dims = 1:ncol(cell_hgt_matrix))
-obj <- FindClusters(obj, resolution = 0.5)
+obj <- FindClusters(obj, resolution = res)
+
+#DimPlot(obj, reduction="umap.rna", group.by = "cell_type")
 
 #infer gene modules
 m <- get_gene_module(obj, cell_hgt_matrix, att, GAS)
-graph.out <- m[[1]]
-co <- m[[2]]
+co <- m[[1]]
+graph.out <- m[[2]]
 
 #write gene modules
 dir.create(lisa_path, showWarnings = F)
@@ -113,7 +121,9 @@ write_GM(co, lisa_path)
 system(
   paste0(
     "/home/wan268/.conda/envs/lisa/bin/python /scratch/deepmaps/code/run_lisa.py --path ",
-    lisa_path
+    lisa_path,
+    " --species ",
+    species
   )
 )
 
@@ -124,7 +134,7 @@ m <-
     GAS,
     co,
     gene_peak_pro,
-    speices = "hg38",
+    species = species,
     jaspar_path = jaspar_path,
     lisa_path = lisa_path
   )
@@ -139,9 +149,8 @@ RI_C <-
 m <- calRAS(RI_C, ct_regulon, graph.out)
 RAS <- m[[1]]
 RI_CT <- m[[2]]
-ct_re <- m[[3]]
+ct_regulon <- m[[3]]
 RAS_C <- m[[4]]
-ct_regulon <- ct_re
 
 ##calculate RAS(2) same topology in a row
 RAS_C1 <- CalRAS2(ct_regulon, graph.out)
@@ -182,6 +191,9 @@ VR <-
 rownames(VR) <- names(tfsmatrix)
 
 ################## Step 6: save
-save.image(paste0(base_dir, obj_basename, ".rdata"))
+save.image(paste0(base_dir, obj_basename, "_1102.rdata"))
+qs::qsave(obj, "/scratch/deepmaps/data/lymph_obj_1102.qsave")
+
+#save.image(paste0("/scratch/deepmaps/data/lymph_obj_1102.rdata"))
 #load(paste0(base_dir, obj_basename, ".rdata"))
-qs::qsave(obj, "/scratch/deepmaps/data/lymph_obj.qsave")
+#obj <- qs::qread(paste0("/scratch/deepmaps/data/lymph_obj_1102.qsave"))

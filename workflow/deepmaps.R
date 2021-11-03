@@ -426,9 +426,9 @@ write_GM <- function(co, lisa_path) {
 #output:
 # a matrix with gene * peak. The gene with no accessible peak will be removed
 
-AccPromoter <- function(obj, gene_peak, GAS, species = "human") {
+AccPromoter <- function(obj, gene_peak, GAS, species = "hg38") {
   peak_cell <- obj@assays$ATAC@counts
-  if (species == "human") {
+  if (species == "hg38") {
     gene.ranges <- genes(EnsDb.Hsapiens.v86)
   } else{
     gene.ranges <- genes(EnsDb.Mmusculus.v79)
@@ -480,8 +480,8 @@ AccPromoter <- function(obj, gene_peak, GAS, species = "human") {
 # 2 - co: a list of bio network which reture from gene_ function
 # 3 - gene_peak_pro: the matrix with gene * peak which return AccPromoter function
 # 4 - species: human / mouse (human = "hg38", mouse = "mm10" )
-# 5 - humanPath: if speices == human, the TF binding RData absolute path of hg38 should be provided
-# 6 - mousePath: if speices == mouse, the TF binding RData absolute path of mm10 should be provided
+# 5 - humanPath: if species == human, the TF binding RData absolute path of hg38 should be provided
+# 6 - mousePath: if species == mouse, the TF binding RData absolute path of mm10 should be provided
 #output:
 # 1 - BA_score a TF binding affinity matrix with TF * peak, the elements in the matrix is the binding power of TF to peak
 # 2 - ct_regulon: candidate cell type active regulon
@@ -491,11 +491,12 @@ Calregulon <-
   function(GAS,
            co,
            gene_peak_pro,
-           speices = "hg38",
+           species = "hg38",
            jaspar_path = "/scratch/deepmaps/jaspar",
            lisa_path = "/home/wan268/hgt/RNA_ATAC/lymph_14k/") {
-    if (speices == "hg38") {
+    if (species == "hg38") {
       tfbs_df <- qs::qread(paste0(jaspar_path, "hg38_lisa_500.qsave"))
+      tfbs_df <- tfbs_df[1:(nrow(tfbs_df) - 1),]
     }
     else {
       tfbs_df <- readRDS("/fs/ess/PCON0022/wxy/mm10.rds")
@@ -510,6 +511,10 @@ Calregulon <-
       matrix(0, nrow(gene_peak_pro), length(unique(tfbs_df$V4)))
     colnames(gene_TF) <- unique(tfbs_df$V4)
     rownames(gene_TF) <- rownames(gene_peak_pro)
+    
+    peak <- tfbs_df[, 1:3]
+    colnames(peak) <- c("chromosome", 'start', 'end')
+    peak <- GenomicRanges::makeGRangesFromDataFrame(peak)
     
     ct_subregulon <- list()
     ct_regulon <- list()
