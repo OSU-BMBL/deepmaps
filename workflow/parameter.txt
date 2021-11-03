@@ -1,0 +1,100 @@
+#!/usr/bin/bash
+#SBATCH --job-name wnn1
+#SBATCH --account PCON0022
+#SBATCH --time=12:00:00
+#SBATCH --nodes=1 
+#SBATCH --ntasks=8
+#SBATCH --mem=60GB
+#SBATCH --gpus-per-node=1
+
+
+#scRNA+scATAC
+module load python/3.7-2019.10
+module load cuda/10.1.168
+source activate HGT2
+n_batch=50 
+batch_size=110 
+n_layers=2
+n_heads=16
+sample_depth=5 
+sample_width=11 
+rep='T' 
+lr=0.1
+epoch=100
+reduction='AE'
+n_hid=128
+
+#case2 pbmc
+n_batch=50 
+batch_size=110 
+n_layers=2
+n_heads=7
+sample_depth=5 
+sample_width=11 
+rep='T' 
+lr=0.01
+epoch=100
+reduction='AE'
+n_hid=14
+
+#case3 lymphoma
+n_batch=50 #512
+batch_size=110 #6 10 32
+n_layers=2
+n_heads=16
+sample_depth=4 #2
+sample_width=8 #6
+rep='T' 
+lr=0.2
+epoch=30
+reduction='AE'
+n_hid=128
+
+
+#scRNA+scRNA
+n_batch=80 
+batch_size=60 
+n_layers=2
+n_heads=13
+sample_depth=5 
+sample_width=11 
+rep='T' 
+lr=0.1
+epoch=100
+reduction='AE'
+n_hid=104
+
+
+#cite-seq
+n_batch=64
+batch_size=64
+n_layers=4
+n_heads=13
+sample_depth=4
+sample_width=8
+rep='T'
+lr=0.1
+epoch=50
+reduction='AE
+n_hid=104
+
+#case1
+n_batch=64
+batch_size=64 
+n_layers=4
+n_heads=8
+sample_depth=4 
+sample_width=8 
+rep='T'
+lr=0.08
+epoch=100
+reduction='AE'
+n_hid=128
+
+python hgt.py --input_dir $'/fs/ess/scratch/PCON0022/xy/RNA_ATAC/data/WNN/pbmc_unsorted_3k_filtered_feature_bc_matrix.txt' --reduction $reduction --n_hid $n_hid --rep $rep --epoch $epoch --lr $lr --n_batch $n_batch --batch_size $batch_size --n_heads $n_heads --n_layers $n_layers --sample_depth $sample_depth --sample_width $sample_width --result_dir $'/fs/ess/scratch/PCON0022/wxy/RNA_ATAC_WNN/1'
+
+
+
+
+
+
