@@ -1,9 +1,9 @@
 # Setup
-
+source("/scratch/deepmaps/code/deepmaps.R")
 Sys.setenv(RETICULATE_PYTHON = "/home/wan268/.conda/envs/hgt1/bin/python")
 use_python("/home/wan268/.conda/envs/hgt1/bin/python")
 py_config()
-source("/scratch/deepmaps/code/deepmaps.R")
+
 jaspar_path <- "/scratch/deepmaps/jaspar/"
 
 ################## Params
@@ -34,6 +34,12 @@ obj <-
 
 obj <- filterCell(obj)
 
+GAS_path <-
+  paste0(base_dir,
+         "lym.txt")
+
+GAS <- read.table(GAS_path, sep = " ")
+
 #calulate peak_gene relation
 ATAC_gene_peak <-
   CalGenePeakScore(peak_count_matrix = obj@assays$ATAC@counts,
@@ -43,15 +49,12 @@ ATAC_gene_peak <-
 gene_peak_pro <-
   AccPromoter(obj, ATAC_gene_peak, GAS, species = species)
 
-GAS <-
-  calculate_GAS(ATAC_gene_peak, obj, method = "velo", veloPath = velo_path)
+#GAS <-
+#  calculate_GAS(ATAC_gene_peak, obj, method = "velo", veloPath = velo_path)
 write.table(GAS, "GAS_test_output.txt")
 
 ################## Step 2: Run HGT in bash -> att & hgt_matrix
 # After HGT is done:
-GAS_path <-
-  paste0(base_dir,
-         "lym.txt")
 
 cell_hgt_matrixPath <-
   paste0(
@@ -69,9 +72,8 @@ file.exists(cell_hgt_matrixPath)
 file.exists(attPath)
 
 ################## Step 3: clustering & generate gene modules
-qs::qsave(obj, paste0(base_dir, obj_basename, ".qsave"))
-#obj <- qs::qread(paste0(base_dir, obj_basename, ".qsave"))
-GAS <- read.table(GAS_path, sep = " ")
+#qs::qsave(obj, paste0(base_dir, obj_basename, ".qsave"))
+
 colnames(GAS) <- str_replace_all(colnames(GAS), "\\.", "-")
 
 cell_hgt_matrix <- read.table(cell_hgt_matrixPath)
@@ -105,9 +107,13 @@ obj <-
                 dims = 1:ncol(cell_hgt_matrix))
 obj <- FindClusters(obj, resolution = res)
 
-#DimPlot(obj, reduction="umap.rna", group.by = "cell_type")
+DefaultAssay(obj) <- "ATAC"
+
+#DimPlot(obj, reduction="umap.rna", group.by = "seurat_clusters")
+colnames(obj@assays$ATAC@data) <- str_replace(colnames(obj@assays$ATAC@data),"-","\\.")
 
 #infer gene modules
+
 m <- get_gene_module(obj, cell_hgt_matrix, att, GAS)
 co <- m[[1]]
 graph.out <- m[[2]]
@@ -140,13 +146,15 @@ m <-
   )
 BA_score <- m[[1]]
 ct_regulon <- m[[2]]
-
+TFinGAS<-m[[3]]
 ##calculate RI
+m1<-uni(gene_peak_pro,BA_score)
+peak_TF<-m1[[2]]
 RI_C <-
-  RI_cell(obj, ct_regulon, GAS, gene_peak_pro, BA_score, graph.out)
-
+  RI_cell(obj, ct_regulon, GAS, gene_peak_pro, peak_TF, graph.out)
+#RI_C <- TG_cell
 ##infer ct_Regulon
-m <- calRAS(RI_C, ct_regulon, graph.out)
+m <- calRAS(RI_C, ct_regulon, graph.out, TFinGAS)
 RAS <- m[[1]]
 RI_CT <- m[[2]]
 ct_regulon <- m[[3]]
@@ -156,44 +164,32 @@ RAS_C <- m[[4]]
 RAS_C1 <- CalRAS2(ct_regulon, graph.out)
 
 ##calculate master TF
-m <- masterFac(ct_regulon, RI_CT)
-TF_cen <- m[[1]]
-gene_cen <- m[[2]]
-network <- m[[3]]
+masterTF <- masterFac(ct_regulon, RI_CT)
+TF_cen <- masterTF[[1]]
+gene_cen <- masterTF[[2]]
+network <- masterTF[[3]]
 
 ##calculate DR
 DR <- calDR(RAS_C1, graph.out, FindALLMarkers = T)
 
-##calculate VR
-
-library(iterators)
-library(foreach)
-library(doParallel)
-
-cl <- makeCluster(12)
-registerDoParallel(cl)
-
-graph.out0 <-
-  (graph.out)[which(graph.out %in% as.integer(substring(colnames(RI_CT), 3, nchar(colnames(
-    RI_CT
-  )))))]
-#names(graph.out0)<-names(graph.out)
-tfsmatrix <- cal_tfmatrixs(graph.out0, graph.out, RI_C, ct_regulon)
-print(str(tfsmatrix))
-#cl<-makeCluster(detectCores()-2)
-#registerDoParallel(cl)
-clusterExport(cl, "tfsmatrix")
-clusterExport(cl, "graph.out0")
-clusterExport(cl, c("cal_sp", "Score_matrix", "cal_meanmatrix", "cal_clust"))
-
-VR <-
-  foreach(i = names(tfsmatrix), .combine = 'rbind') %dopar% cal_sp(i)
-rownames(VR) <- names(tfsmatrix)
 
 ################## Step 6: save
 save.image(paste0(base_dir, obj_basename, "_1102.rdata"))
 qs::qsave(obj, "/scratch/deepmaps/data/lymph_obj_1102.qsave")
 
 #save.image(paste0("/scratch/deepmaps/data/lymph_obj_1102.rdata"))
-#load(paste0(base_dir, obj_basename, ".rdata"))
+#load(paste0(base_dir, obj_basename, "_1102.rdata"))
 #obj <- qs::qread(paste0("/scratch/deepmaps/data/lymph_obj_1102.qsave"))
+
+case_result <- list(
+  RAS=RAS,
+  RAS_C=RAS_C,
+  GAS=GAS,
+  RI_CT=RI_CT,
+  RI_C=RI_C,
+  DR=DR,
+  ct_regulon=ct_regulon,
+  masterTF=masterTF,
+  graph.out = graph.out
+)
+qs::qsave(case_result, "/scratch/deepmaps/data/lymph_case_result_1102.qsave")
