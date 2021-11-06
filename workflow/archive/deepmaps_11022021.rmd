@@ -629,10 +629,6 @@ Calregulon <-
               h <- paste(TF[k], a, sep = "_")
               ct_subregulon[[h]] <- co[[i]][gene_TF[co[[i]], TF[k]] > 0]
             }
-            
-            
-            
-            
           }
         }
       }
