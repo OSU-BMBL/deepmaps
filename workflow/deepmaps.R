@@ -372,7 +372,7 @@ get_gene_module <-
     }
     m <- list()
     m[[1]] <- co
-    m[[2]] <- graph.out
+    m[[2]] <- droplevels(graph.out)
     return (m)
 
   }
@@ -912,6 +912,7 @@ calDR <-
   function(RAS_C1,
            graph.out,
            FindALLMarkers = T,
+           lfcThres = 0.25,
            ident.1 = 1,
            ident.2 = c(2, 3, 4)) {
     pbmc <- CreateSeuratObject(counts = RAS_C1)
@@ -921,7 +922,7 @@ calDR <-
       #pbmc <- ScaleData(pbmc, features = rownames(pbmc))
       #Idents(pbmc)<-graph.out
       DR <-
-        FindAllMarkers(pbmc, only.pos = T, logfc.threshold = 0.25)
+        FindAllMarkers(pbmc, only.pos = T, logfc.threshold = lfcThres)
       DR <- DR[DR$p_val < 0.05, ]
       m <-
         unlist(strsplit(DR$gene, "-"))[seq(2, length(unlist(strsplit(DR$gene, "-"))), 2)]
