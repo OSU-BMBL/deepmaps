@@ -51,7 +51,7 @@ Read10Xdata <-
       StringToGRanges(rownames(atac_counts), sep = c(":", "-"))
     grange.use <-
       seqnames(grange.counts) %in% standardChromosomes(grange.counts)
-    atac_counts <- atac_counts[as.vector(grange.use),]
+    atac_counts <- atac_counts[as.vector(grange.use), ]
     chrom_assay <- CreateChromatinAssay(
       counts = atac_counts,
       sep = c(":", "-"),
@@ -62,7 +62,7 @@ Read10Xdata <-
     )
     tmp_obj <- CreateSeuratObject(counts = chrom_assay,
                                   assay = "ATAC")
-
+    
     exp_assay <-
       CreateAssayObject(counts = rna_counts,
                         min.cells = ncol(rna_counts) * min_cell)
@@ -91,11 +91,11 @@ readmatrix <- function(rna_matrix, atac_matrix, min_cell = 0.1) {
     StringToGRanges(rownames(atac_matrix), sep = c(":", "-"))
   grange.use <-
     seqnames(grange.counts) %in% standardChromosomes(grange.counts)
-  atac_matrix <- atac_matrix[as.vector(grange.use),]
+  atac_matrix <- atac_matrix[as.vector(grange.use), ]
   atac_matrix <-
     atac_matrix[lengths(strsplit(gsub(":", "-", rownames(atac_matrix)) , split = "-")) ==
-                  3, ]
-  rna_matrix <- rna_matrix[unique(rownames(rna_matrix)), ]
+                  3,]
+  rna_matrix <- rna_matrix[unique(rownames(rna_matrix)),]
   #cell_type<-rna_cell$V7[-1][grepl("*RNA*",rna_gene$V2[-1])]
   #min_cell=0.01
   chrom_assay <- CreateChromatinAssay(
@@ -138,7 +138,7 @@ filterCell <- function(obj, nmad = 3) {
                    nmads = nmad,
                    log = F,
                    type = "both")
-
+  
   mito <- isOutlier(obj$percent.mt,
                     nmads = nmad,
                     log = F,
@@ -154,7 +154,7 @@ filterCell <- function(obj, nmad = 3) {
                   rna == F &
                   mito == F)
   return(obj)
-
+  
 }
 
 
@@ -194,7 +194,7 @@ CalGenePeakScore <-
 # GAS matrix with gene * peak, the elements represent the gene activity score in each cell
 # a gene * peak matrix, the elements represent the regulatory potential for peak to gene
 
-calculate_GAS <-
+calculate_GAS_v2 <-
   function(ATAC_gene_peak,
            obj,
            method = "velo",
@@ -203,14 +203,14 @@ calculate_GAS <-
     gene_count <- obj@assays$RNA@counts
     peak_count[peak_count > 0] = 1
     WA <- ATAC_gene_peak %*% peak_count
-    WA <- WA[which(rowSums(as.matrix(WA)) > 0), ]
+    WA <- WA[which(rowSums(as.matrix(WA)) > 0),]
     gene_count <-
-      gene_count[which(rowSums(as.matrix(gene_count)) > 0), ]
+      gene_count[which(rowSums(as.matrix(gene_count)) > 0),]
     commongene <-
       intersect(x = rownames(WA), y = rownames(gene_count))
     WA <- as.matrix(WA)
-    WA <- WA[commongene, ]
-    gene_count <- gene_count[commongene, ]
+    WA <- WA[commongene,]
+    gene_count <- gene_count[commongene,]
     gene_rowsum <- rowSums(gene_count)
     peak_rowsum <- rowSums(WA)
     norm_gene_count <- gene_count / rowSums(gene_count)
@@ -222,18 +222,19 @@ calculate_GAS <-
     print(str(peak_count))
     if (method == "velo") {
       velo <- read.csv(veloPath, header = TRUE)
+      
       ##remove duplicated rows with same gene
       if (length(which(duplicated.default(velo[, 1]))) > 0) {
-        velo <- velo[-which(duplicated.default(velo[, 1]) == T),]
+        velo <- velo[-which(duplicated.default(velo[, 1]) == T), ]
       }
-
+      
       ##Filter rows if gene name equals to NA
       if (length(which(is.na(velo[, 1]))) > 0) {
-        velo <- velo[-which(is.na(velo[, 1])),]
+        velo <- velo[-which(is.na(velo[, 1])), ]
       }
-
+      
       rownames(velo) <- velo[, 1]
-      velo <- velo[, -1]
+      velo <- velo[,-1]
       velo <- as.matrix(velo)
       #colnames(velo) <- gsub("-", ".", colnames(velo))
       colnames(velo) <- gsub("\\.", "-", colnames(velo))
@@ -247,7 +248,7 @@ calculate_GAS <-
         atac[intersect(rownames(rna), rownames(velo)), intersect(colnames(rna), colnames(velo))]
       gene_rowsum <- gene_rowsum[rownames(rna)]
       peak_rowsum <- peak_rowsum[rownames(rna)]
-
+      
       genes <- dim(velo)[1]
       cells <- dim(velo)[2]
       # rank matrix
@@ -255,20 +256,20 @@ calculate_GAS <-
       rank_gene <- velo
       rank_cell <- apply(velo, 2, rank)
       rank_gene <- t(apply(velo, 1, rank))
-
+      
       rank_cell[velo > 0] = genes - rank_cell[velo > 0]
       rank_cell[velo < 0] = rank_cell[velo < 0] - 1
       rank_cell[velo == 0] = 0
       rank_gene[velo > 0] = cells - rank_gene[velo > 0]
       rank_gene[velo < 0] = rank_gene[velo < 0] - 1
       rank_gene[velo == 0] = 0
-
+      
       # number of positive/negative for each gene/cell
       cell_posi_num <- colSums(velo > 0)
       cell_nega_num <- colSums(velo < 0)
       gene_posi_num <- rowSums(velo > 0)
       gene_nega_num <- rowSums(velo < 0)
-
+      
       # weights
       weights <-
         ((rank_cell ^ 2 + rank_gene ^ 2) / ((t((t(velo > 0)) * cell_posi_num + (t(velo <
@@ -276,7 +277,7 @@ calculate_GAS <-
         )) ^ 2 + ((velo > 0) * gene_posi_num + (velo < 0) * gene_nega_num
         ) ^ 2 + (velo == 0))) ^ 0.5
       weights[velo < 0] = weights[velo < 0] * (-1)
-
+      
       # GAS
       GAS <-
         rna * gene_rowsum + ((1 + weights) * atac) * ((1 + weights) *
@@ -314,13 +315,13 @@ calculate_GAS <-
         gene_count * gene_rowsum * obj$RNA.weight + peak_count * obj$ATAC.weight *
         peak_rowsum
     }
-
+    
     return(GAS)
   }
 
 
 
-calculate_GAS_archive <-
+calculate_GAS_v1 <-
   function(ATAC_gene_peak,
            obj,
            method = "velo",
@@ -330,12 +331,14 @@ calculate_GAS_archive <-
     gene_count <- obj@assays$RNA@counts
     peak_count[peak_count > 0] = 1
     WA <- ATAC_gene_peak %*% peak_count
-    WA <- WA[which(rowSums(as.matrix(WA)) > 0), ]
-    gene_count <- gene_count[which(rowSums(as.matrix(gene_count)) > 0), ]
-    commongene <- intersect(x = rownames(WA), y = rownames(gene_count))
+    WA <- WA[which(rowSums(as.matrix(WA)) > 0),]
+    gene_count <-
+      gene_count[which(rowSums(as.matrix(gene_count)) > 0),]
+    commongene <-
+      intersect(x = rownames(WA), y = rownames(gene_count))
     WA <- as.matrix(WA)
-    WA <- WA[commongene, ]
-    gene_count <- gene_count[commongene, ]
+    WA <- WA[commongene,]
+    gene_count <- gene_count[commongene,]
     gene_rowsum <- rowSums(gene_count)
     peak_rowsum <- rowSums(WA)
     norm_gene_count <- gene_count / rowSums(gene_count)
@@ -349,23 +352,23 @@ calculate_GAS_archive <-
       velo <- read.csv(veloPath, header = TRUE)
       velo <- as.matrix(velo)
       rownames(velo) <- velo[, 1]
-
+      
       temp <-
         cbind(toupper(rownames(gene_count)), rownames(gene_count))
       rownames(temp) <- temp[, 1]
       temp <-
-        temp[intersect(toupper(rownames(gene_count)), rownames(velo)), ]
-      velo <- velo[temp[, 1], ]
+        temp[intersect(toupper(rownames(gene_count)), rownames(velo)),]
+      velo <- velo[temp[, 1],]
       rownames(velo) <- temp[, 2]
-
-      velo <- velo[, -1]
+      
+      velo <- velo[,-1]
       colnames(velo) <- gsub("\\.", "-", colnames(velo))
       vv <- matrix(as.numeric(velo), dim(velo)[1], dim(velo)[2])
       rownames(vv) <- rownames(velo)
       colnames(vv) <- colnames(velo)
       velo <- vv
       rm(vv)
-
+      
       rna <- gene_count
       atac <- peak_count
       velo <-
@@ -377,7 +380,7 @@ calculate_GAS_archive <-
       gene_rowsum <- gene_rowsum[rownames(rna)]
       peak_rowsum <- peak_rowsum[rownames(rna)]
       str(velo)
-
+      
       genes <- dim(velo)[1]
       cells <- dim(velo)[2]
       # rank matrix
@@ -385,27 +388,27 @@ calculate_GAS_archive <-
       rank_gene <- velo
       rank_cell <- apply(velo, 2, rank)
       rank_gene <- t(apply(velo, 1, rank))
-
+      
       rank_cell[velo > 0] = genes - rank_cell[velo > 0]
       rank_cell[velo < 0] = rank_cell[velo < 0] - 1
       rank_cell[velo == 0] = 0
       rank_gene[velo > 0] = cells - rank_gene[velo > 0]
       rank_gene[velo < 0] = rank_gene[velo < 0] - 1
       rank_gene[velo == 0] = 0
-
+      
       # number of positive/negative for each gene/cell
       cell_posi_num <- colSums(velo > 0)
       cell_nega_num <- colSums(velo < 0)
       gene_posi_num <- rowSums(velo > 0)
       gene_nega_num <- rowSums(velo < 0)
-
+      
       # weights
       weights = ((rank_cell ^ 2 + rank_gene ^ 2) / ((t((t(velo > 0)) * cell_posi_num + (t(velo <
                                                                                             0)) * cell_nega_num
       )) ^ 2 + ((velo > 0) * gene_posi_num + (velo < 0) * gene_nega_num
       ) ^ 2 + (velo == 0))) ^ 0.5
       weights[velo < 0] = weights[velo < 0] * (-1)
-
+      
       # GAS
       GAS = rna * gene_rowsum + ((1 + weights) * atac) * ((1 + weights) *
                                                             peak_rowsum)
@@ -434,11 +437,9 @@ calculate_GAS_archive <-
           reduction.key = "atacUMAP_"
         )
       obj <-
-        FindMultiModalNeighbors(
-          obj,
-          reduction.list = list("pca", "lsi"),
-          dims.list = list(1:50, 2:50)
-        )
+        FindMultiModalNeighbors(obj,
+                                reduction.list = list("pca", "lsi"),
+                                dims.list = list(1:50, 2:50))
       GAS <-
         gene_count * gene_rowsum * obj$RNA.weight + peak_count * obj$ATAC.weight *
         peak_rowsum
@@ -466,7 +467,7 @@ get_gene_module <-
     nhead <- ncol(att)
     gene_name <- rownames(GAS)[att$gene + 1]
     cell_name <- colnames(GAS)[att$cell + 1]
-
+    
     att$ct <- graph.out[cell_name]
     att$gene_name <- gene_name
     att$cell_name <- cell_name
@@ -476,7 +477,7 @@ get_gene_module <-
     nor <- function(x) {
       return((x - min(x)) / (max(x) - min(x)))
     }
-
+    
     att[, 4:nhead] <- nor(att[, 4:nhead])
     attention <-
       aggregate(x = as.list(att[, 4:nhead]),
@@ -496,17 +497,17 @@ get_gene_module <-
     co <- list()
     for (i in (0:(length(unique(att$ct)) - 1))) {
       t <-
-        mean(attention[attention$Group.1 == i,]$x) + 1.6 * sd(attention[attention$Group.1 ==
-                                                                          i,]$x)
+        mean(attention[attention$Group.1 == i, ]$x) + 1.6 * sd(attention[attention$Group.1 ==
+                                                                           i, ]$x)
       co[[paste('ct', i, sep = "_")]] <-
-        attention[attention$Group.1 == i,]$Group.2[attention[attention$Group.1 ==
-                                                               i,]$x > t]
+        attention[attention$Group.1 == i, ]$Group.2[attention[attention$Group.1 ==
+                                                                i, ]$x > t]
     }
     #m <- list()
     #m[[1]] <- co
     #m[[2]] <- droplevels(graph.out)
     return (co)
-
+    
   }
 
 
@@ -522,20 +523,20 @@ write_GM <- function(co, lisa_path) {
   if (length(dir(path = lisa_path, pattern = ".csv")) >
       0) {
     system(paste0("rm ", lisa_path, "*.csv "))
-
+    
   }
   if (length(dir(path = lisa_path, pattern = ".txt")) >
       0) {
     system(paste0("rm ", lisa_path, "*.txt "))
   }
-
+  
   for (j in (1:length(co))) {
     if (length(unique(co[[j]])) < 20 |
         length(unique(co[[j]])) > 20000) {
       next
     } else{
       ct <- unlist(strsplit(names(co[j]), split = "_"))[1]
-
+      
       write.table(
         co[[j]],
         paste0(lisa_path, names(co[j]), ".txt"),
@@ -566,7 +567,7 @@ AccPromoter <- function(obj, gene_peak, GAS, species = "hg38") {
   } else{
     gene.ranges <- genes(EnsDb.Mmusculus.v79)
   }
-
+  
   gene.use <-
     seqnames(gene.ranges) %in% standardChromosomes(gene.ranges)[standardChromosomes(gene.ranges) !=
                                                                   "MT"]
@@ -585,7 +586,7 @@ AccPromoter <- function(obj, gene_peak, GAS, species = "hg38") {
       ranges = IRanges(start = , x$start,
                        width = x$width)
     )
-
+  
   peak_name <-
     colnames(gene_peak)[lengths(strsplit(gsub(":", "-", colnames(gene_peak)) , split = "-")) ==
                           3]
@@ -600,8 +601,8 @@ AccPromoter <- function(obj, gene_peak, GAS, species = "hg38") {
   promoter_gene <-
     genebodyandpromoter.coords$gene_name[unique(over@to)]
   str(promoter_gene)
-  gene_peak <- gene_peak[promoter_gene, ]
-
+  gene_peak <- gene_peak[promoter_gene,]
+  
   return(gene_peak)
 }
 
@@ -629,13 +630,13 @@ Calregulon <-
            lisa_path = "/home/wan268/hgt/RNA_ATAC/lymph_14k/") {
     if (species == "hg38") {
       tfbs_df <- qs::qread(paste0(jaspar_path, "hg38_lisa_500.qsave"))
-      tfbs_df <- tfbs_df[1:(nrow(tfbs_df) - 1),]
+      tfbs_df <- tfbs_df[1:(nrow(tfbs_df) - 1), ]
     }
     else {
       tfbs_df <- readRDS("/fs/ess/PCON0022/wxy/mm10.rds")
-      tfbs_df[tfbs_df$V6 > 500, ]
+      tfbs_df[tfbs_df$V6 > 500,]
     }
-
+    
     BA_score <-
       matrix(0, ncol(gene_peak_pro), length(unique(tfbs_df$V4)))
     colnames(BA_score) <- unique(tfbs_df$V4)
@@ -644,11 +645,11 @@ Calregulon <-
       matrix(0, nrow(gene_peak_pro), length(unique(tfbs_df$V4)))
     colnames(gene_TF) <- unique(tfbs_df$V4)
     rownames(gene_TF) <- rownames(gene_peak_pro)
-
+    
     peak <- tfbs_df[, 1:3]
     colnames(peak) <- c("chromosome", 'start', 'end')
     peak <- GenomicRanges::makeGRangesFromDataFrame(peak)
-
+    
     ct_subregulon <- list()
     ct_regulon <- list()
     coexp_tf <- list()
@@ -656,7 +657,7 @@ Calregulon <-
     for (i in (1:length(co))) {
       if (length(co[[i]]) > 0) {
         co[[i]] <- intersect(co[[i]], rownames(gene_peak_pro))
-        a <- which(gene_peak_pro[co[[i]], ] > 0, arr.ind = T)
+        a <- which(gene_peak_pro[co[[i]],] > 0, arr.ind = T)
         op <- colnames(gene_peak_pro)[unname(a[, 'col'])]
         peak_name <-
           op[lengths(strsplit(gsub(":", "-", op) , split = "-")) == 3]
@@ -671,14 +672,14 @@ Calregulon <-
         p <- op[over@from]
         pp <- tfbs_df$V5[over@to] / 100
         df <- data.frame(p, pp, tfbs_df$V4[over@to])
-        hh <- df[!duplicated(df[, -2]), ]
+        hh <- df[!duplicated(df[,-2]),]
         for (k1 in (1:nrow(hh))) {
-          BA_score[hh[k1, ]$p, hh[k1, ]$tfbs_df.V4.over.to.] <- hh[k1, ]$pp
+          BA_score[hh[k1,]$p, hh[k1,]$tfbs_df.V4.over.to.] <- hh[k1,]$pp
         }
-
+        
         gene_TF <- gene_peak_pro %*% BA_score
         TF <- unique(tfbs_df$V4[over@to])
-
+        
         if (length(co[[i]]) < 20000 & length(co[[i]]) > 20) {
           tf <-
             read.csv(paste(lisa_path,
@@ -689,7 +690,7 @@ Calregulon <-
           TF <- intersect(unique(TF), tf_pval_0.05)
         }
         #print(length(TF))
-
+        
         #gene_TF[co[[i]],pp]<-gene_peak_pro[co[[i]],p] %*% BA_score[p,TF]
         coexp_tf[[names(co[i])]] <- TF
         #print(length(TF))
@@ -717,13 +718,13 @@ Calregulon <-
         }
       }
     }
-
+    
     m <- list()
     m[[1]] <- BA_score
     ct_subregulon <- ct_subregulon[lengths(ct_subregulon) > 10]
     m[[2]] <- ct_subregulon
     m[[3]] <- TFinGAS
-
+    
     return(m)
   }
 
@@ -757,12 +758,12 @@ uni <- function(gene_peak_pro, BA_score) {
         unname(unlist(rowSums(BA_score[, colnames(BA_score) == x])))
     }
   }
-
-
-
+  
+  
+  
   rownames(mat) <- rownames(gene_TF)
   colnames(mat) <- unique(colnames(gene_TF))
-
+  
   for (x in unique(colnames(gene_TF))) {
     if (is.null(nrow(gene_TF[, colnames(gene_TF) == x]))) {
       #print("111")
@@ -838,7 +839,7 @@ RI_cell <-
     gene_peak <- gene_peak_pro
     for (j in (1:length(graph.out))) {
       hhh <-
-        (peak_cell[, j] * gene_peak[g, ]) %*% (peak_cell[, j] * peak_TF[, t])
+        (peak_cell[, j] * gene_peak[g,]) %*% (peak_cell[, j] * peak_TF[, t])
       #hhh<-gene_peak[g,] %*%peak_TF[,t]
       bb = data.frame('gene' = g1, 'tf' = t1)
       bb$tf = as.factor(bb$tf)
@@ -879,21 +880,21 @@ calRAS <- function(RI_C, ct_regulon, graph.out, TFinGAS = T) {
     unlist(strsplit(rownames(RI_C), "_"))[seq(2, length(unlist(strsplit(
       rownames(RI_C), "_"
     ))), 2)]
-  RAS_E <- RI_C * as.matrix(GAS[g,])
+  RAS_E <- RI_C * as.matrix(GAS[g, ])
   colnames(RAS_E) <- colnames(RI_C)
   #RAS_C TF(regulon)*cell
   RAS_C <-
     as(matrix(0, nrow = length(TF), ncol = length(graph.out)), "sparseMatrix")
-
+  
   rownames(RAS_C) <- TF
   colnames(RAS_C) <- names(graph.out)
   for (i in (1:length(ct_regulon))) {
     tf <- unlist(strsplit(names(ct_regulon[i]), "_"))[1]
     #ct<-unlist(strsplit(names(ct_regulon[i]),"_"))[2]
-    RAS_C[tf,] <-
-      colMeans(RAS_E[paste(tf, ct_regulon[[i]], sep = "_"),])
+    RAS_C[tf, ] <-
+      colMeans(RAS_E[paste(tf, ct_regulon[[i]], sep = "_"), ])
   }
-
+  
   #RAS TF*CT
   RAS <-
     as(matrix(0, nrow = length(TF), ncol = length(CT)), "sparseMatrix")
@@ -911,12 +912,12 @@ calRAS <- function(RI_C, ct_regulon, graph.out, TFinGAS = T) {
         RAS[tf, ct] <-
           mean(RAS_E[paste(tf, ct_regulon[[i]], sep = "_"), graph.out == substring(ct, 3, nchar(ct))])
       }
-
+      
     } else{
       RAS[tf, ct] <-
         mean(RAS_E[paste(tf, ct_regulon[[i]], sep = "_"), graph.out == substring(ct, 3, nchar(ct))])
     }
-
+    
     #print(i)
   }
   ct_re <- list()
@@ -937,10 +938,10 @@ calRAS <- function(RI_C, ct_regulon, graph.out, TFinGAS = T) {
   } else{
     ct_re <- ct_re[lengths(ct_re) > 10]
   }
-
+  
   m <- list()
   m[[1]] <- RAS
-  m[[2]] <- RI_CT[rowSums(RI_CT) > 0,]
+  m[[2]] <- RI_CT[rowSums(RI_CT) > 0, ]
   m[[3]] <- ct_re
   m[[4]] <- RAS_C
   return (m)
@@ -959,14 +960,14 @@ CalRAS2 <- function(ct_regulon, graph.out) {
   rownames(RAS_C1) <- names(ct_regulon)
   colnames(RAS_C1) <- names(graph.out)
   for (i in (1:length(ct_regulon))) {
-    if(i %%100 ==0) {
+    if (i %% 100 == 0) {
       print(i)
     }
     tf <- unlist(strsplit(names(ct_regulon[i]), "_"))[1]
     ct <- unlist(strsplit(names(ct_regulon[i]), "_"))[2]
     g <- ct_regulon[[i]]
-    RAS_C1[names(ct_regulon[i]),] <-
-      colMeans(RI_C[paste(tf, g, sep = "_"),] * as.matrix(GAS[g,]))
+    RAS_C1[names(ct_regulon[i]), ] <-
+      colMeans(RI_C[paste(tf, g, sep = "_"), ] * as.matrix(GAS[g, ]))
   }
   return(RAS_C1)
 }
@@ -997,7 +998,7 @@ masterFac <- function(ct_regulon, RI_CT) {
     TF_CT <- unique(TF_CT[seq(1, length(TF_CT), 2)])
     gene_CT <- unique((union(unlist(ct_regulon[CR_R == i]), TF_CT)))
     adj <- matrix(0, nrow = length(gene_CT), ncol = length(gene_CT))
-
+    
     rownames(adj) <- gene_CT
     colnames(adj) <- gene_CT
     for (k in (1:length(ct_regulon[CR_R == i]))) {
@@ -1021,7 +1022,7 @@ masterFac <- function(ct_regulon, RI_CT) {
     cen <- igraph::evcent(g)$vector
     TF_cen[[i]] <- cen[TF_CT]
     gene_cen[[i]] <- cen[setdiff(names(cen), TF_CT)]
-
+    
   }
   m <- list()
   m[[1]] <- TF_cen
@@ -1055,12 +1056,12 @@ calDR <-
       #Idents(pbmc)<-graph.out
       DR <-
         FindAllMarkers(pbmc, only.pos = T, logfc.threshold = lfcThres)
-      DR <- DR[DR$p_val < 0.05, ]
+      DR <- DR[DR$p_val < 0.05,]
       m <-
         unlist(strsplit(DR$gene, "-"))[seq(2, length(unlist(strsplit(DR$gene, "-"))), 2)]
       m <-
         unlist(strsplit(m, "ct"))[seq(2, length(unlist(strsplit(m, "ct"))), 2)]
-      DR <- DR[as.numeric(m) == DR$cluster, ]
+      DR <- DR[as.numeric(m) == DR$cluster,]
     } else{
       DR <-
         FindMarkers(pbmc,
@@ -1068,7 +1069,7 @@ calDR <-
                     ident.2 = ident.2,
                     min.pct = 0.25)
     }
-
+    
     return (DR)
   }
 
@@ -1111,7 +1112,7 @@ cal_tfmatrixs <- function(graph.out0,
 cal_clust <- function(m) {
   a <-
     data.frame(m)[which(apply(m, 1, function(row)
-      all(row == 0)) == F), ]
+      all(row == 0)) == F),]
   if (nrow(a) > 2) {
     b <- dist(a)
     c <- hclust(b)
@@ -1137,12 +1138,12 @@ cal_clust <- function(m) {
           all(row == 0)) == T))#[-1]
       hc <- c(hc, d)
     }
-
+    
   } else{
     hc <- c(1:nrow(m))
     names(hc) <- rownames(m)
   }
-
+  
   return(hc)
 }
 
@@ -1165,7 +1166,7 @@ Score_matrix <- function(meanm) {
     mScore <- sum(dist(meanm)) / (choose(n, 2) * (log(ncol(meanm))))
   }
   return(mScore)
-
+  
 }
 
 
