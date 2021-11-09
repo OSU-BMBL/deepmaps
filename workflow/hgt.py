@@ -91,13 +91,13 @@ parser.add_argument('--optimizer', type=str, default='adamw',
 args = parser.parse_args()
 
 
-#file0 = 'n_batch'+str(args.n_batch)+'_batch_size_'+str(args.batch_size)+'sample_depth_' +\
-#    str(args.sample_depth)+'_nheads_'+str(args.n_heads)+'_nlayers_'+str(args.n_layers) +\
-#    '_sample_width_'+str(args.sample_width)+'_lr_'+str(args.lr)+'_n_hid_'+str(args.n_hid) +\
+file0 = 'n_batch'+str(args.n_batch)+'_batch_size_'+str(args.batch_size)+'sample_depth_' +\
+    str(args.sample_depth)+'_nheads_'+str(args.n_heads)+'_nlayers_'+str(args.n_layers) +\
+    '_sample_width_'+str(args.sample_width)+'_lr_'+str(args.lr)+'_n_hid_'+str(args.n_hid)+'_epoch_'+str(args.epoch) 
 #    '_redution_'+str(args.reduction)+'_rf_'+str(args.rf)+'_factor_'+str(args.factor)+'_pacience_'+str(args.patience)\
 #    + '_layertype_'+str(args.layer_type)+'_loss_'+str(args.loss) + \
 #    '_optimizer_'+str(args.optimizer)+'_dropout_'+str(args.dropout)
-file0='102_n_hid_'+str(args.n_hid)+'_nheads_'+str(args.n_heads)+'_nlayers_'+str(args.n_layers)+'_lr_'+str(args.lr)+'n_batch'+str(args.n_batch)+'batch_size'+str(args.batch_size)
+#file0='112_n_hid_'+str(args.n_hid)+'_nheads_'+str(args.n_heads)+'_nlayers_'+str(args.n_layers)+'_lr_'+str(args.lr)+'n_batch'+str(args.n_batch)+'batch_size'+str(args.batch_size)
 
 
 print(file0)
@@ -839,32 +839,13 @@ else:
 
 np.savetxt(gene_dir+file0, gene_matrix, delimiter=' ')
 np.savetxt(cell_dir+file0, cell_matrix.detach().numpy(), delimiter=' ')
-debuginfoStr(' finished')
-#g = np.nonzero(gene_cell)[0]
-#c = np.nonzero(gene_cell)[1]+gene_cell.shape[0]
-#name1 = pd.DataFrame(
-#    gene_name[0:torch.tensor([g, c]).shape[1]], columns=['gene'])
-#name2 = pd.DataFrame(
-#    cell_name[0:torch.tensor([g, c]).shape[1]], columns=['cell'])
-#df = pd.DataFrame(attention)
-#df2 = pd.concat([name1, name2, df], axis=1)
-#df2.to_csv(att_dir+file0, sep=",", index=True)
-
-command = 'Rscript'
-args1 = args.input_dir
-args2 = args.label_dir
-args3 = cell_dir
-args4 = file0
-print(args1)
-print(args2)
-print(args3)
-print(args4)
-path = "/ocean/projects/ccr180012p/cankun/hgt-deepmaps/ari.R"
-cmd = [command, path, args1, args2, args3, args4]
-print(cmd)
-xy = subprocess.check_output(cmd, universal_newlines=True)
-xy = xy.split('\n')[len(xy.split('\n')) - 1]
-x = xy.split(" ")[0]
-y = xy.split(" ")[1]
-print("ARI", x)
-print("sil", y)
+debuginfoStr('finished')
+g = np.nonzero(gene_cell)[0]
+c = np.nonzero(gene_cell)[1]+gene_cell.shape[0]
+name1 = pd.DataFrame(
+    gene_name[0:torch.tensor([g, c]).shape[1]], columns=['gene'])
+name2 = pd.DataFrame(
+    cell_name[0:torch.tensor([g, c]).shape[1]], columns=['cell'])
+df = pd.DataFrame(attention)
+df2 = pd.concat([name1, name2, df], axis=1)
+df2.to_csv(att_dir+file0, sep=",", index=True)
