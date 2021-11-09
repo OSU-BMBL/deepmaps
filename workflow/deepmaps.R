@@ -231,8 +231,9 @@ calculate_GAS <-
       if (length(which(is.na(velo[, 1]))) > 0) {
         velo <- velo[-which(is.na(velo[, 1])),]
       }
+
       rownames(velo) <- velo[, 1]
-      velo <- velo[,-1]
+      velo <- velo[, -1]
       velo <- as.matrix(velo)
       #colnames(velo) <- gsub("-", ".", colnames(velo))
       colnames(velo) <- gsub("\\.", "-", colnames(velo))
@@ -318,6 +319,137 @@ calculate_GAS <-
   }
 
 
+
+calculate_GAS_archive <-
+  function(ATAC_gene_peak,
+           obj,
+           method = "velo",
+           return.weight = F,
+           veloPath = NULL) {
+    peak_count <- obj@assays$ATAC@counts
+    gene_count <- obj@assays$RNA@counts
+    peak_count[peak_count > 0] = 1
+    WA <- ATAC_gene_peak %*% peak_count
+    WA <- WA[which(rowSums(as.matrix(WA)) > 0), ]
+    gene_count <- gene_count[which(rowSums(as.matrix(gene_count)) > 0), ]
+    commongene <- intersect(x = rownames(WA), y = rownames(gene_count))
+    WA <- as.matrix(WA)
+    WA <- WA[commongene, ]
+    gene_count <- gene_count[commongene, ]
+    gene_rowsum <- rowSums(gene_count)
+    peak_rowsum <- rowSums(WA)
+    norm_gene_count <- gene_count / rowSums(gene_count)
+    norm_WBinary <- WA / rowSums(WA)
+    #norm_gene_count<-NormalizeData(CreateSeuratObject(counts = gene_count))$ RNA@data
+    gene_count <- norm_gene_count
+    #norm_WBinary<-NormalizeData(CreateSeuratObject(counts = WA))$RNA@data
+    peak_count <- norm_WBinary
+    print(str(peak_count))
+    if (method == "velo") {
+      velo <- read.csv(veloPath, header = TRUE)
+      velo <- as.matrix(velo)
+      rownames(velo) <- velo[, 1]
+
+      temp <-
+        cbind(toupper(rownames(gene_count)), rownames(gene_count))
+      rownames(temp) <- temp[, 1]
+      temp <-
+        temp[intersect(toupper(rownames(gene_count)), rownames(velo)), ]
+      velo <- velo[temp[, 1], ]
+      rownames(velo) <- temp[, 2]
+
+      velo <- velo[, -1]
+      colnames(velo) <- gsub("\\.", "-", colnames(velo))
+      vv <- matrix(as.numeric(velo), dim(velo)[1], dim(velo)[2])
+      rownames(vv) <- rownames(velo)
+      colnames(vv) <- colnames(velo)
+      velo <- vv
+      rm(vv)
+
+      rna <- gene_count
+      atac <- peak_count
+      velo <-
+        velo[intersect(rownames(rna), rownames(velo)), intersect(colnames(rna), colnames(velo))]
+      rna <-
+        rna[intersect(rownames(rna), rownames(velo)), intersect(colnames(rna), colnames(velo))]
+      atac <-
+        atac[intersect(rownames(rna), rownames(velo)), intersect(colnames(rna), colnames(velo))]
+      gene_rowsum <- gene_rowsum[rownames(rna)]
+      peak_rowsum <- peak_rowsum[rownames(rna)]
+      str(velo)
+
+      genes <- dim(velo)[1]
+      cells <- dim(velo)[2]
+      # rank matrix
+      rank_cell <- velo
+      rank_gene <- velo
+      rank_cell <- apply(velo, 2, rank)
+      rank_gene <- t(apply(velo, 1, rank))
+
+      rank_cell[velo > 0] = genes - rank_cell[velo > 0]
+      rank_cell[velo < 0] = rank_cell[velo < 0] - 1
+      rank_cell[velo == 0] = 0
+      rank_gene[velo > 0] = cells - rank_gene[velo > 0]
+      rank_gene[velo < 0] = rank_gene[velo < 0] - 1
+      rank_gene[velo == 0] = 0
+
+      # number of positive/negative for each gene/cell
+      cell_posi_num <- colSums(velo > 0)
+      cell_nega_num <- colSums(velo < 0)
+      gene_posi_num <- rowSums(velo > 0)
+      gene_nega_num <- rowSums(velo < 0)
+
+      # weights
+      weights = ((rank_cell ^ 2 + rank_gene ^ 2) / ((t((t(velo > 0)) * cell_posi_num + (t(velo <
+                                                                                            0)) * cell_nega_num
+      )) ^ 2 + ((velo > 0) * gene_posi_num + (velo < 0) * gene_nega_num
+      ) ^ 2 + (velo == 0))) ^ 0.5
+      weights[velo < 0] = weights[velo < 0] * (-1)
+
+      # GAS
+      GAS = rna * gene_rowsum + ((1 + weights) * atac) * ((1 + weights) *
+                                                            peak_rowsum)
+    }
+    if (method == "wnn") {
+      obj <- obj[, colnames(gene_count)]
+      DefaultAssay(obj) <- "RNA"
+      obj <-
+        FindVariableFeatures(obj,
+                             selection.method = "vst",
+                             nfeatures = 2000)
+      obj <- ScaleData(obj, features = VariableFeatures(obj))
+      obj <- RunPCA(obj)
+      # ATAC analysis
+      # We exclude the first dimension as this is typically correlated with sequencing depth
+      DefaultAssay(obj) <- "ATAC"
+      obj <- RunTFIDF(obj)
+      obj <- FindTopFeatures(obj, min.cutoff = 'q0')
+      obj <- RunSVD(obj)
+      obj <-
+        RunUMAP(
+          obj,
+          reduction = 'lsi',
+          dims = 2:50,
+          reduction.name = "umap.atac",
+          reduction.key = "atacUMAP_"
+        )
+      obj <-
+        FindMultiModalNeighbors(
+          obj,
+          reduction.list = list("pca", "lsi"),
+          dims.list = list(1:50, 2:50)
+        )
+      GAS <-
+        gene_count * gene_rowsum * obj$RNA.weight + peak_count * obj$ATAC.weight *
+        peak_rowsum
+    }
+    if (isTRUE(return.weight)) {
+      return(weights)
+    } else {
+      return(GAS)
+    }
+  }
+
 ## ----------------------------------------------------------------------------------------------------------------
 # CT active gene modules calculation
 # input:
@@ -370,10 +502,10 @@ get_gene_module <-
         attention[attention$Group.1 == i,]$Group.2[attention[attention$Group.1 ==
                                                                i,]$x > t]
     }
-    m <- list()
-    m[[1]] <- co
-    m[[2]] <- droplevels(graph.out)
-    return (m)
+    #m <- list()
+    #m[[1]] <- co
+    #m[[2]] <- droplevels(graph.out)
+    return (co)
 
   }
 
