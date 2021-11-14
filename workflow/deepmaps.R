@@ -629,8 +629,7 @@ Calregulon <-
            jaspar_path = "/scratch/deepmaps/jaspar",
            lisa_path = "/home/wan268/hgt/RNA_ATAC/lymph_14k/") {
     if (species == "hg38") {
-      tfbs_df <- qs::qread(paste0(jaspar_path, "hg38_lisa_500.qsave"))
-      tfbs_df <- tfbs_df[1:(nrow(tfbs_df) - 1), ]
+      tfbs_df <- qs::qread(paste0(jaspar_path, "jaspar_hg38_500.qsave"))
     }
     else {
       tfbs_df <- readRDS("/fs/ess/PCON0022/wxy/mm10.rds")
@@ -812,6 +811,7 @@ RI_cell <-
     peak_cell <- obj@assays$ATAC@counts
     peak_cell[peak_cell > 0] = 1
     peak_cell <- (peak_cell[, colnames(GAS)])
+    
     #graph.out<-Idents(obj)
     #TG_cell <- foreach(i=1:length(ct_regulon), .packages='Matrix',.combine='c') %dopar%{
     TG_cell <- matrix(0, length(unique(v)), length(graph.out))
@@ -1041,21 +1041,66 @@ masterFac <- function(ct_regulon, RI_CT) {
 #output:
 # 1 - DR: differnent regulons.
 
+mean.fxn <- function(x) {
+  return(log(x = rowMeans(x = x) + 1, base = 2))
+}
+
+
 calDR <-
   function(RAS_C1,
            graph.out,
-           FindALLMarkers = T,
+           only.pos = T,
            lfcThres = 0.25,
+           pvalThres = 0.05,
+           ident.1 = 1,
+           ident.2 = c(2, 3, 4)) {
+    ras_obj <- CreateSeuratObject(counts = RAS_C1)
+    Idents(ras_obj) <- graph.out
+    DR <-
+      FindAllMarkers(
+        ras_obj,
+        only.pos = only.pos,
+        min.pct = 0,
+        logfc.threshold = lfcThres,
+        min.cells.feature = 0,
+        min.cells.group = 0,
+        return.thresh = 1,
+        mean.fxn = mean.fxn
+      )
+    
+    DR1 <- DR %>%
+      dplyr::filter(p_val <= pvalThres) %>%
+      tidyr::separate(gene, c("gene", 'from'), "-") %>%
+      dplyr::filter(from == paste0("ct",cluster)) 
+    
+    #m <-
+    #  unlist(strsplit(DR$gene, "-"))[seq(2, length(unlist(strsplit(DR$gene, "-"))), 2)]
+    #m <-
+    #  unlist(strsplit(m, "ct"))[seq(2, length(unlist(strsplit(m, "ct"))), 2)]
+    #DR <- DR[as.numeric(m) == DR$cluster,]
+    #DR$gene <- str_remove(DR$gene, "-.*")
+    return (DR1)
+  }
+
+
+calDR_v2 <-
+  function(RAS_C1,
+           graph.out,
+           FindALLMarkers = T,
+           lfcThres = 0,
            ident.1 = 1,
            ident.2 = c(2, 3, 4)) {
     pbmc <- CreateSeuratObject(counts = RAS_C1)
     Idents(pbmc) <- graph.out
     if (FindALLMarkers == T) {
-      #pbmc <- NormalizeData(pbmc)
-      #pbmc <- ScaleData(pbmc, features = rownames(pbmc))
-      #Idents(pbmc)<-graph.out
       DR <-
-        FindAllMarkers(pbmc, only.pos = T, logfc.threshold = lfcThres)
+        FindAllMarkers(
+          pbmc,
+          only.pos = T,
+          logfc.threshold = lfcThres,
+          min.pct = 0,
+          mean.fxn = mean.fxn
+        )
       DR <- DR[DR$p_val < 0.05,]
       m <-
         unlist(strsplit(DR$gene, "-"))[seq(2, length(unlist(strsplit(DR$gene, "-"))), 2)]
@@ -1069,10 +1114,8 @@ calDR <-
                     ident.2 = ident.2,
                     min.pct = 0.25)
     }
-    
     return (DR)
   }
-
 
 
 
@@ -1190,3 +1233,9 @@ cal_sp <- function(regulon) {
   print(mScore)
   return(sp)
 }
+
+
+mean.fxn <- function(x) {
+  return(log(x = rowMeans(x = x) + 1, base = 2))
+}
+
