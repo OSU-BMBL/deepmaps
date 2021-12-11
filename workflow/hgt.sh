@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-cd /home/wan268/hgt/RNA_ATAC
+cd /scratch/deepmaps/code
 source activate hgt1
 
 # Hyperpapameters

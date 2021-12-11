@@ -541,14 +541,14 @@ Calregulon <-
            speices = "human",
            humanPath = '/fs/ess/PCON0022/wxy/bind/hg38_400.Rdata',
            mousePath = "/fs/ess/scratch/PCON0022/wxy/mm10.RData") {
-    if (speices == "hg38") {
-      load(humanPath)
-      hg38 <- hg38[hg38$V6 > 500, ]
-    } else{
-      load("/fs/ess/scratch/PCON0022/wxy/mm10.RData")
-      hg38 <- a_2[a_2$V6 > 500, ]
-    }
-    hg38 <- hg38[1:(nrow(hg38) - 1), ]
+    #if (speices == "hg38") {
+    #  load(humanPath)
+    #  hg38 <- hg38[hg38$V6 > 500, ]
+    #} else{
+    #  load("/fs/ess/scratch/PCON0022/wxy/mm10.RData")
+    #  hg38 <- a_2[a_2$V6 > 500, ]
+    #}
+    #hg38 <- hg38[1:(nrow(hg38) - 1), ]
     BA_score <- matrix(0, ncol(gene_peak_pro), length(unique(hg38$V4)))
     colnames(BA_score) <- unique(hg38$V4)
     rownames(BA_score) <- colnames(gene_peak_pro)
@@ -598,7 +598,7 @@ Calregulon <-
         if (length(co[[i]]) < 20000 & length(co[[i]]) > 20) {
           tf <-
             read.csv(paste(
-              "/fs/ess/PCON0022/wxy/Lisa/",
+              "C:/Users/flyku/Desktop/tmp/lisa/",
               names(co[i]),
               ".txt.csv",
               sep = ""
@@ -719,7 +719,7 @@ uni<-function(gene_peak_pro,BA_score){
 ##' @param graph.out: cell cluster result
 ##' return regulon intensity score of ct_regulon in cell level (TF_gene*cell)
 ##' @export
-RI_cell<-function(kidney,ct_regulon,GAS,gene_peak_pro,peak_TF,graph.out){
+RI_cell<-function(kidney,ct_regulon,GAS,gene_peak_pro,peak_TF,graph.out,peak_cell){
   v<-vector()
   for (i in (1:length(ct_regulon))){
     v<-append(v,paste(unlist(strsplit(names(ct_regulon[i]),"_"))[1],ct_regulon[[i]],sep="_"))
@@ -1009,6 +1009,7 @@ ct_regulon<-ct_re
 
 ##calculate RAS(2) same topology in a row
 RAS_C1<-CalRAS2(ct_regulon,graph.out)
+
 
 ##calculate master TF
 m<-masterFac(ct_regulon,RI_CT)
