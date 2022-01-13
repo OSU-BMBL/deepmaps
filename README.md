@@ -1,4 +1,4 @@
-# deepmaps
+# DeepMAPS
 
 This is the repository for the manuscript: [DeepMAPS: Single-cell biological network inference using heterogeneous graph transformer (bioRxiv)](https://www.biorxiv.org/content/10.1101/2021.10.31.466658v2).
 
