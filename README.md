@@ -27,11 +27,9 @@ Versions:
 
 Install:
 
-Note: replace `[environment name]` to any environment name
-
 ```{bash}
-conda create -n [environment name] python=3.8.5
-conda activate [environment name]
+conda create -n deepmaps_env python=3.8.5
+conda activate deepmaps_env
 conda install pytorch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 cudatoolkit=10.2 -c pytorch
 conda install pyg -c pyg -c conda-forge
 pip install kneed==0.7.0
