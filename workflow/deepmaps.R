@@ -43,7 +43,7 @@ Read10Xdata <-
            annoObj = NULL,
            fragmentsPath = NULL,
            hintPath = NULL,
-           min_cell = 0.01) {
+           min_cell = 0.001) {
     inputdata.10x <- Read10X_h5(h5Path)
     rna_counts <- inputdata.10x$`Gene Expression`
     atac_counts <- inputdata.10x$Peaks
