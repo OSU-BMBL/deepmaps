@@ -31,15 +31,61 @@ os.environ['PYTHONHASHSEED'] = str(seed)
 # torch.cuda.manual_seed(seed)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
+
+
+list_in = r.list_in
+epoch = list_in['epoch']
+lr = list_in['lr']
+result_dir = list_in['result_dir']
+cuda = list_in['cuda']
+gene_cell = list_in['cell_gene']
+n_hid = int(list_in['n_hid'])
+n_heads = int(list_in['n_heads'])
+gene_name = list_in['gene_name']
+cell_name = list_in['cell_name']
+data_type = list_in['data_type']
+if (data_type == 'CITE'):
+    n_layers = 4 # type=int, default=4, help='Number of GNN layers'
+    sample_depth = 4 # type=int, default=4, help='How many numbers to sample the graph'
+    sample_width = 8 # type=int, default=8, help='How many nodes to be sampled per layer per type'
+    n_batch = 64 # type=int, default=64, help='Number of batch (sampled graphs) for each epoch'
+    batch_size = 64 # type=int, default=64, help='Number of output nodes for training'
+    #n_hid = 104
+    #n_heads = 13
+    #lr = 0.1
+    #epoch = 50
+if (data_type == 'scRNA_scATAC'):
+    n_layers = 2 # type=int, default=4, help='Number of GNN layers'
+    sample_depth = 4 # type=int, default=4, help='How many numbers to sample the graph'
+    sample_width = 8 # type=int, default=8, help='How many nodes to be sampled per layer per type'
+    n_batch = 50 # type=int, default=64, help='Number of batch (sampled graphs) for each epoch'
+    batch_size = 110 # type=int, default=64, help='Number of output nodes for training'
+    #n_hid = 128
+    #n_heads = 16
+    #lr = 0.1
+    #epoch =100
+if (data_type == 'multipleRNA'):
+    n_layers = 2 # type=int, default=4, help='Number of GNN layers'
+    dropout = 0.0# type=float, default=0, help='Dropout ratio'
+    sample_depth = 5 # type=int, default=4, help='How many numbers to sample the graph'
+    sample_width = 11 # type=int, default=8, help='How many nodes to be sampled per layer per type'
+    n_batch = 80 # type=int, default=64, help='Number of batch (sampled graphs) for each epoch'
+    batch_size = 60 # type=int, default=64, help='Number of output nodes for training'
+    #n_hid = 104
+    #n_heads = 13
+    #lr = 0.1
+    #epoch = 100
+
 parser = argparse.ArgumentParser(description='Training GNN on gene cell graph')
-parser.add_argument('--epoch', type=int, default=150)
+parser.add_argument('--epoch', type=int, default=epoch)
 # Result
-parser.add_argument('--result_dir', type=str, default='default.txt',
+parser.add_argument('--result_dir', type=str, default = result_dir,
                     help='The address for storing the models and optimization results.')
-parser.add_argument('--input_dir', type=str, default='default.txt',
-                    help='The address for storing the models and optimization results.')
-parser.add_argument('--label_dir', type=str, default='default.txt',
-                    help='The address for storing the models and optimization results.')
+
+#parser.add_argument('--input_dir', type=str, default='default.txt',
+#                    help='The address for storing the models and optimization results.')
+#parser.add_argument('--label_dir', type=str, default='default.txt',
+#                    help='The address for storing the models and optimization results.')
 # Feature extration
 parser.add_argument('--reduction', type=str, default='AE',
                     help='the method for feature extraction, pca, raw')
@@ -48,23 +94,23 @@ parser.add_argument('--in_dim', type=int, default=256,
                     help='Number of hidden dimension (AE)')
 
 # GAE
-parser.add_argument('--n_hid', type=int, default=64,
+parser.add_argument('--n_hid', type=int, default=n_hid,
                     help='Number of hidden dimension')
-parser.add_argument('--n_heads', type=int, default=8,
+parser.add_argument('--n_heads', type=int, default=n_heads,
                     help='Number of attention head')
-parser.add_argument('--n_layers', type=int, default=4,
+parser.add_argument('--n_layers', type=int, default=n_layers,
                     help='Number of GNN layers')
 parser.add_argument('--dropout', type=float, default=0,
                     help='Dropout ratio')
-parser.add_argument('--sample_depth', type=int, default=6,
+parser.add_argument('--sample_depth', type=int, default=sample_depth,
                     help='How many numbers to sample the graph')
-parser.add_argument('--sample_width', type=int, default=520,
+parser.add_argument('--sample_width', type=int, default=sample_width,
                     help='How many nodes to be sampled per layer per type')
-parser.add_argument('--lr', type=float, default=1e-3,
+parser.add_argument('--lr', type=float, default=lr,
                     help='learning rate')
-parser.add_argument('--n_batch', type=int, default=64,
+parser.add_argument('--n_batch', type=int, default=n_batch,
                     help='Number of batch (sampled graphs) for each epoch')
-parser.add_argument('--batch_size', type=int, default=128,
+parser.add_argument('--batch_size', type=int, default=batch_size,
                     help='Number of output nodes for training')
 parser.add_argument('--layer_type', type=str, default='hgt',
                     help='the layer type for GAE')
@@ -77,7 +123,7 @@ parser.add_argument('--patience', type=int, default=5,
                     help='patience')
 parser.add_argument('--rf', type=float, default='0.0',
                     help='the weights of regularization')
-parser.add_argument('--cuda', type=int, default=0,
+parser.add_argument('--cuda', type=int, default=cuda,
                     help='cuda 0 use GPU0 else cpu ')
 
 parser.add_argument('--rep', type=str, default='T',
@@ -367,8 +413,8 @@ def sub_sample(samp_nodes, sampled_depth=args.sample_depth, sampled_number=args.
 # load data
 start_time = time.time()
 print('---0:00:00---scRNA starts loading.')
-gene_cell, gene_name, cell_name = load_data(
-    args.input_dir, sep=" ", col_name=True, row_name=True)
+#gene_cell, gene_name, cell_name = load_data(
+#    args.input_dir, sep=" ", col_name=True, row_name=True)
 gene_cell = gene_cell.astype('float')
 # gene_cell=gene_cell[0:1000,:]
 # cpu/gpu
@@ -836,35 +882,17 @@ else:
     gene_matrix = np.concatenate((final_tensor, gene_matrix), 0)
     final_attention = np.vstack(attention[0:int(gene_cell.shape[0]/ba)])
     attention = np.concatenate((final_attention, gnn.att), 0)
-
-np.savetxt(gene_dir+file0, gene_matrix, delimiter=' ')
-np.savetxt(cell_dir+file0, cell_matrix.detach().numpy(), delimiter=' ')
+cell_matrix = cell_matrix.detach().numpy()
+#np.savetxt(gene_dir+file0, gene_matrix, delimiter=' ')
+#np.savetxt(cell_dir+file0, cell_matrix, delimiter=' ')
 debuginfoStr(' finished')
-#g = np.nonzero(gene_cell)[0]
-#c = np.nonzero(gene_cell)[1]+gene_cell.shape[0]
-#name1 = pd.DataFrame(
-#    gene_name[0:torch.tensor([g, c]).shape[1]], columns=['gene'])
-#name2 = pd.DataFrame(
-#    cell_name[0:torch.tensor([g, c]).shape[1]], columns=['cell'])
-#df = pd.DataFrame(attention)
-#df2 = pd.concat([name1, name2, df], axis=1)
+g = np.nonzero(gene_cell)[0]
+c = np.nonzero(gene_cell)[1]+gene_cell.shape[0]
+name1 = pd.DataFrame(
+    gene_name[0:torch.tensor([g, c]).shape[1]], columns=['gene'])
+name2 = pd.DataFrame(
+    cell_name[0:torch.tensor([g, c]).shape[1]], columns=['cell'])
+df = pd.DataFrame(attention)
+df2 = pd.concat([name1, name2, df], axis=1)
+attention = df2
 #df2.to_csv(att_dir+file0, sep=",", index=True)
-
-command = 'Rscript'
-args1 = args.input_dir
-args2 = args.label_dir
-args3 = cell_dir
-args4 = file0
-print(args1)
-print(args2)
-print(args3)
-print(args4)
-path = "./ari.R"
-cmd = [command, path, args1, args2, args3, args4]
-print(cmd)
-xy = subprocess.check_output(cmd, universal_newlines=True)
-xy = xy.split('\n')[len(xy.split('\n')) - 1]
-x = xy.split(" ")[0]
-y = xy.split(" ")[1]
-print("ARI", x)
-print("sil", y)
