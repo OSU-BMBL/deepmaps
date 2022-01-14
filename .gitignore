@@ -10,7 +10,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+.Rhistory
 # Distribution / packaging
 .Python
 env/
