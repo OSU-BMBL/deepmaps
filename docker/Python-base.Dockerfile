@@ -31,10 +31,10 @@ RUN conda install numpy numpy_groupies scipy matplotlib pandas seaborn scikit-le
 	&& jupyter lab clean
 
 # Pytorch Geometric
-RUN pip install torch-scatter -f https://pytorch-geometric.com/whl/torch-1.7.0+cu110.html
-RUN pip install torch-sparse -f https://pytorch-geometric.com/whl/torch-1.7.0+cu110.html
-RUN pip install torch-cluster -f https://pytorch-geometric.com/whl/torch-1.7.0+cu110.html
-RUN pip install torch-spline-conv -f https://pytorch-geometric.com/whl/torch-1.7.0+cu110.html
+RUN pip install torch-scatter==2.0.7 -f https://data.pyg.org/whl/torch-1.7.0+cu110.html
+RUN pip install torch-sparse -f https://data.pyg.org/whl/torch-1.7.0+cu110.html
+RUN pip install torch-cluster -f https://data.pyg.org/whl/torch-1.7.0+cu110.html
+RUN pip install torch-spline-conv -f https://data.pyg.org/whl/torch-1.7.0+cu110.html
 RUN pip install torch-geometric
 
 # Velocity

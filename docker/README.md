@@ -4,19 +4,22 @@
 
 This base image contains all necessary dependencies for DeepMAPS. Including PyTorch (1.7.0, CUDA11, GPU version), PyTorch Geometric, Velocity, Lisa2, etc.
 
+You can pull from Docker Hub
 ```{bash, eval=FALSE}
-# Build
-docker build -f Python-base.Dockerfile -t wangcankun100/deepmaps-python-base .
-
-# Test
-docker run wangcankun100/deepmaps-python-base
-
-# Start Jupyter notebook
-docker run -p 8888:8888 --gpus=all --ipc=host wangcankun100/deepmaps-python-base
-docker run -p 8888:8888 --gpus=all --ipc=host wangcankun100/deepmaps-python-base jupyter notebook --allow-root --ip 0.0.0.0
-
-# Push
-docker push wangcankun100/deepmaps-python-base
+docker pull osubmbl/deepmaps-python-base
+```
+or build docker image yourself from `Dockerfile` 
+```{bash, eval=FALSE}
+docker build -f Python-base.Dockerfile -t osubmbl/deepmaps-python-base .
+```
+Test what packages are installed
+```{bash, eval=FALSE}
+docker run osubmbl/deepmaps-python-base
+```
+Start Jupyter notebook
+```{bash, eval=FALSE}
+docker run -p 8888:8888 --gpus=all --ipc=host osubmbl/deepmaps-python-base
+docker run -p 8888:8888 --gpus=all --ipc=host osubmbl/deepmaps-python-base jupyter notebook --allow-root --ip 0.0.0.0
 ```
 
 ## R Base image
@@ -25,15 +28,17 @@ To build the docker image, enter project root directory first.
 
 This base image contains all necessary for the package. Including plumber, Seurat, Signac, tidyverse, BioConductor suite (GenomicRanges, SingleCellExperiment, etc.)
 
+You can pull from Docker Hub
 ```{bash, eval=FALSE}
-# Build
-docker build --progress=plain -f R-base.Dockerfile -t wangcankun100/deepmaps-r-base .
-
-# Test what packages are installed
-docker run wangcankun100/deepmaps-r-base
-
-# Push
-docker push wangcankun100/deepmaps-r-base
+docker pull osubmbl/deepmaps-r-base
+```
+or build docker image yourself from `Dockerfile` 
+```{bash, eval=FALSE}
+docker build -f R-base.Dockerfile -t osubmbl/deepmaps-r-base .
+```
+Test what packages are installed
+```{bash, eval=FALSE}
+docker run osubmbl/deepmaps-r-base
 ```
 
 ### Other images
