@@ -42,7 +42,7 @@ RUN pip install -U --no-cache-dir \
 	velocyto \
 	scvelo
 
-# LISA2
+# LISA2, with a database > 30GB
 RUN conda install -c liulab-dfci lisa2
 
 # socket-io must be v4.6
