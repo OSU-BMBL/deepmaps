@@ -26,19 +26,21 @@ $ docker build -f Deepmaps-base.Dockerfile -t osubmbl/deepmaps-base .
 
 It is possible to run DeepMAPS programs inside a container using the shell command. We provide a guide to run on example data.
 
-First, clone repository to create a local copy on your computer:
+First, clone the DeepMAPS repository to create a local copy on your computer:
 
 ```bash
 $ git clone https://github.com/OSU-BMBL/deepmaps.git
 ```
 
-Starting with an interactive bash:
+Starting with an interactive bash (Change `[your_deepmaps_repository_path]` to your cloned DeepMAPS directory):
 
 ```bash
+$ WORK_DIR=[your_deepmaps_repository_path]
 $ docker run --rm -it --init \
-  -v your_deepmaps_path:/deepmaps
+  -v $WORK_DIR:/deepmaps \
   --gpus=all \
   --ipc=host \
+  --network=host \
   osubmbl/deepmaps-base bash
 ```
 
