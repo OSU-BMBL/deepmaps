@@ -1,19 +1,19 @@
 ## Load function
-source("/tmp/deepmaps/scRNA_scATAC1.r")
+source("/deepmaps/scRNA_scATAC1.r")
 # set python environment
 Sys.setenv(RETICULATE_PYTHON = "/home/user/miniconda/bin/python")
 use_python("/home/user/miniconda/bin/python")
 py_config()
 
-lymph_obj <- ReadData(h5Path = "/tmp/deepmaps/docker/data/lymph_node_lymphoma_14k_filtered_feature_bc_matrix.h5", data_type = "scRNA_scATAC", min_cell = 0.001, dataFormat = "h5")
+lymph_obj <- ReadData(h5Path = "/deepmaps/docker/data/lymph_node_lymphoma_14k_filtered_feature_bc_matrix.h5", data_type = "scRNA_scATAC", min_cell = 0.001, dataFormat = "h5")
 ATAC_gene_peak <- CalGenePeakScore(peak_count_matrix = lymph_obj@assays$ATAC@counts,organism = "GRCh38")
 
-velo <-"/tmp/deepmaps/docker/data/lymph_node_lymphoma_14k_filtered_feature_bc_matrix.csv"
+velo <-"/deepmaps/docker/data/lymph_node_lymphoma_14k_filtered_feature_bc_matrix.csv"
 GAS_obj <- calculate_GAS_v1(ATAC_gene_peak = ATAC_gene_peak, obj = lymph_obj, method = "velo", veloPath = velo)
 GAS <- GAS_obj[[1]]
 lymph_obj <- GAS_obj[[2]]
 
-HGT_result <- run_HGT(GAS = as.matrix(GAS),result_dir='/tmp/deepmaps', data_type='scRNA_scATAC', envPath=NULL, lr=0.2, epoch=30, n_hid=128, n_heads=16)
+HGT_result <- run_HGT(GAS = as.matrix(GAS),result_dir='/deepmaps', data_type='scRNA_scATAC', envPath=NULL, lr=0.2, epoch=30, n_hid=128, n_heads=16)
 
 cell_hgt_matrix <- HGT_result[['cell_hgt_matrix']]
 rownames(cell_hgt_matrix) <- colnames(GAS)
