@@ -1,10 +1,10 @@
-cd /tmp/deepmaps/
+cd /deepmaps/
 mkdir cell
 mkdir gene
 mkdir model
 mkdir att
 
-cd /tmp/deepmaps/docker
+cd /deepmaps/docker
 mkdir data
 cd data 
 
@@ -14,5 +14,5 @@ wget https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/lymph_node_lymphoma_14k_f
 
 gunzip lymph_node_lymphoma_14k_filtered_feature_bc_matrix.csv.gz
 
-cd /tmp/deepmaps/
-Rscript /tmp/deepmaps/docker/test.R
+cd /deepmaps/
+Rscript /deepmaps/docker/test.R
