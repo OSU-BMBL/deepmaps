@@ -16,16 +16,23 @@ GPU: 2x A100-PCIE-40GB
 System: Red Hat Enterprise Linux release 8.3 (Ootpa)
 ```
 
-## How to install
+## Preparations
 
-Versions:
+### Example data
+
+We used a single-cell multiome ATAC+Gene expression dataset from [10X Genomics](https://www.10xgenomics.com/resources/datasets/fresh-frozen-lymph-node-with-b-cell-lymphoma-14-k-sorted-nuclei-1-standard-2-0-0). The raw data is derived from 14,566 cells diagnosed with diffuse small lymphocytic lymphoma (DSLL) of the lymph node lymph.
+
+- [RNA+ATAC count matrix (.h5) (118 MB)](https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/lymph_node_lymphoma_14k_filtered_feature_bc_matrix.h5)
+- [ATAC fragments (.tsv.gz) (2.7 GB)](https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/lymph_node_lymphoma_14k_atac_fragments.tsv.gz)
+- [ATAC fragments index (.tbi) (1 MB)](https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/lymph_node_lymphoma_14k_atac_fragments.tsv.gz.tbi)
+- [RNA velocity matrix (.csv.gz) (434 MB)](https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/lymph_node_lymphoma_14k_filtered_feature_bc_matrix.csv.gz)
+
+### Installation
 
 - python: 3.8
 - pytorch: 1.9.0
 - cuda: 10.2
 - torch_geometric: 2.0.3
-
-Install:
 
 ```{bash}
 conda create -n deepmaps_env python=3.8.5
