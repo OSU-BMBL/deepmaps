@@ -23,7 +23,7 @@ if (!requireNamespace("scater", quietly = TRUE))
   BiocManager::install("scater")
 
 
-# Creat a seuart object 
+# Creat a seuart object
 # input:
 # h5Path: address of  h5 file to read. (When dataFormat is 'h5', it couldn't be NULL.)
 # rna_matrix: a RNA matrix where the rows correspond to genes and the columns correspond to cells. (When dataFormat is 'matrixs', it couldn't be NULL.)
@@ -48,7 +48,7 @@ ReadData <- function(h5Path = NULL, rna_matrix = NULL, atac_matrix = NULL, adt_m
       h5 <- Read10X_h5(h5Path)
       rna <- h5$`Gene Expression`
       adt <- h5$`Antibody Capture`
-      
+
     }
     # gene filtering
     if (gene.filter==TRUE){
@@ -59,7 +59,7 @@ ReadData <- function(h5Path = NULL, rna_matrix = NULL, atac_matrix = NULL, adt_m
       rna <- rna[which(rowSums(binaryrna) > ncol(binaryrna)*min_cell),]
       adt <- adt[which(rowSums(binaryadt) > ncol(binaryadt)*min_cell),]
     }
-    
+
     #Setup a Seurat object, add the RNA and protein data
     obj <- CreateSeuratObject(counts = rna)
     obj [["percent.mt"]] <- PercentageFeatureSet(obj, pattern = "^MT-")
@@ -98,14 +98,14 @@ ReadData <- function(h5Path = NULL, rna_matrix = NULL, atac_matrix = NULL, adt_m
           mito == F
       )
     }
-    # normalization and scaling 
+    # normalization and scaling
     DefaultAssay(obj) <- 'RNA'
     obj <- NormalizeData(obj) %>% FindVariableFeatures()
     all.genes <- rownames(obj)
     obj <- ScaleData(obj, features = all.genes)
     DefaultAssay(obj) <- 'ADT'
     VariableFeatures(obj) <- rownames(obj[["ADT"]])
-    obj <- NormalizeData(obj, normalization.method = 'CLR', margin = 2) %>% 
+    obj <- NormalizeData(obj, normalization.method = 'CLR', margin = 2) %>%
       ScaleData()
     DefaultAssay(obj) <- 'RNA'
   }else if (data_type=='scRNA_scATAC'){
@@ -134,21 +134,21 @@ CLR <- function(obj){
   m1 <- obj@assays$RNA@counts[obj@assays$RNA@var.features,]
   m2 <- obj@assays$ADT@counts
   m3 <- m2
-  # Add 'p_' to the name of the protein 
+  # Add 'p_' to the name of the protein
   rownames(m3) <- paste0('p_',rownames(m2))
   m <- NormalizeData(rbind( m1, m3), normalization.method = 'CLR', margin = 2)
   return(m)
 }
 
 
-# Cluster cells based on HGT embedding  
-# input: 
-# cell_hgt_matrixPath: the path of cell_embedding matrix 
+# Cluster cells based on HGT embedding
+# input:
+# cell_hgt_matrixPath: the path of cell_embedding matrix
 # nhid: hyper-parameter of HGT model
 # resolution: resolution of cell clustering
 # obj: a seurat object obtained from creatobject fuction
 # output:
-# obj: a seurat object containing cell clustering result 
+# obj: a seurat object containing cell clustering result
 HGT_cluster <- function(obj, cell_hgt_matrix, nhid, resolution){
   cell_hgt_matrix<-as.matrix(cell_hgt_matrix)
   rownames(cell_hgt_matrix) <-colnames(rna)
@@ -165,18 +165,18 @@ HGT_cluster <- function(obj, cell_hgt_matrix, nhid, resolution){
   }
   obj <- FindNeighbors(obj, reduction = "HGT",dims=1:nhid)
   obj <- FindClusters(obj, resolution = resolution)
-  
+
   return(obj)
 }
 
 
 # Draw a heatmap of marker proteins or genes
 # required packages: dsb, ComplexHeatmap
-# input: 
-# obj: a seurat object obtained from HGT_cluster fuction 
-# marker: character of markers(the order of markers corresponding to ctorder) 
+# input:
+# obj: a seurat object obtained from HGT_cluster fuction
+# marker: character of markers(the order of markers corresponding to ctorder)
 # ctorder: the order of celltypes to display
-# assays: RNA or ADT 
+# assays: RNA or ADT
 # output:
 # a heatmap of marker proteins or genes
 
@@ -202,8 +202,8 @@ MarkerHeatmap <- function(obj,marker,ctorder,assays){
 
 
 # take a subset of obj and preprocess data again
-# input: 
-# obj: a seurat object obtained from HGT_cluster fuction 
+# input:
+# obj: a seurat object obtained from HGT_cluster fuction
 # I: cell names subset
 # output:
 # obj: a subset of obj after preprocessing
@@ -216,16 +216,16 @@ subobject <- function(obj,I){
   obj <- ScaleData(obj, features = all.genes)
   DefaultAssay(obj) <- 'ADT'
   VariableFeatures(obj) <- rownames(obj[["ADT"]])
-  obj <- NormalizeData(obj, normalization.method = 'CLR', margin = 2) %>% 
+  obj <- NormalizeData(obj, normalization.method = 'CLR', margin = 2) %>%
     ScaleData()
   return(obj)
 }
 
 
-# find features mostly associated with a given feature based on the expression of a type of features and two types of cells. 
+# find features mostly associated with a given feature based on the expression of a type of features and two types of cells.
 # input:
 # feature: a given feature (gene or protein)
-# ident: an expression matrix of a type of features and two types of cells. 
+# ident: an expression matrix of a type of features and two types of cells.
 # output:
 # co: features mostly associated with the given feature
 Findcofeatures <- function(feature,ident){
@@ -245,10 +245,10 @@ Findcofeatures <- function(feature,ident){
 }
 
 
-# find all features mostly associated with top DE features based on the expression of two types of cells. 
+# find all features mostly associated with top DE features based on the expression of two types of cells.
 # input:
 # rna.markers: the result of DE genes analysis between two cell types from FindMarkers function
-# rna_ident: an RNA expression matrix of two types of cells after discarding zero expression genes. 
+# rna_ident: an RNA expression matrix of two types of cells after discarding zero expression genes.
 # adt.markers: the result of DE proteins analysis between two cell types from FindMarkers function
 # adt_ident: an ADT abundance matrix of two types of cells after discarding zero abundance proteins.
 # output:
@@ -286,34 +286,34 @@ Findallcofeatures <- function(rna.markers,rna_ident,adt.markers,adt_ident){
   allcofeatures[['corna2']] <- corna2
   allcofeatures[['coadt1']] <- coadt1
   allcofeatures[['coadt2']] <- coadt2
-  
+
   return(allcofeatures)
 }
 
 
 # calculate subset of obj under two cell types, the DE features and top associated features
-# input: 
-# obj: a seurat object obtained from HGT_cluster fuction 
+# input:
+# obj: a seurat object obtained from HGT_cluster fuction
 # ident.1, ident.2: two cell types
 # output:
 # obj_co: a list of the subset of obj and selected features
 subobjco <- function(obj, ident.1, ident.2){
   obj_co <- list()
-  # DEG analysis between ident.1 and ident.2 
+  # DEG analysis between ident.1 and ident.2
   DefaultAssay(obj) <- 'RNA'
   rna.markers <-  FindMarkers(obj, ident.1 = ident.1 ,ident.2 = ident.2)
   DefaultAssay(obj) <- 'ADT'
   adt.markers <-  FindMarkers(obj, ident.1 = ident.1,ident.2 = ident.2)
-  
+
   I0 <- colnames(obj)[which(obj@meta.data$cell_type %in% c(ident.1,ident.2))]
   obj0 <- subobject(obj,I0)
-  
+
   # expression data for rnas and adts of two cell types
   rna_ident  <- obj0@assays$RNA@data
   adt_ident  <- obj0@assays$ADT@data
   rna_ident <- rna_ident[which(rowSums(rna_ident)!=0),]
   adt_ident <- adt_ident[which(rowSums(adt_ident)!=0),]
-  
+
   cofeatures <- Findallcofeatures(rna.markers = rna.markers, rna_ident = rna_ident, adt.markers = adt.markers, adt_ident = adt_ident)
   corna1 <- cofeatures[['corna1']]
   corna2 <- cofeatures[['corna2']]
@@ -328,18 +328,18 @@ subobjco <- function(obj, ident.1, ident.2){
 }
 
 
-# draw heatmap on correlation matrix between selected features 
+# draw heatmap on correlation matrix between selected features
 # required packages: RColorBrewer
-# input: 
+# input:
 # obj_co: a list obtained from subbmco function
 # output:
-# heatmap: heatmap on correlation matrix between selected features 
+# heatmap: heatmap on correlation matrix between selected features
 #library(RColorBrewer)
 DEfeaturesheatmap <- function(obj_co){
   obj0 <- obj_co$obj
   corna1 <- obj_co$cofeatures$corna1
   corna2 <- obj_co$cofeatures$corna2
-  coadt1 <- obj_co$cofeatures$coadt1 
+  coadt1 <- obj_co$cofeatures$coadt1
   coadt2 <- obj_co$cofeatures$coadt2
   corna <- c(corna1,corna2)
   coadt <- c(coadt1,coadt2)
@@ -362,10 +362,10 @@ DEfeaturesheatmap <- function(obj_co){
 
 
 # draw a line representing a given feature
-# input： 
+# input：
 # f: a given feature
 # dff: a dataframe containing expression of selected features and a dimension values of HGT embedding.
-# color : color of a line 
+# color : color of a line
 # output:
 # draw a line representing a given feature
 line <- function(f,dff,color){
@@ -377,23 +377,23 @@ line <- function(f,dff,color){
 
 
 # draw the lines by a loess smoothing function based on the corresponding embedding and scaled gene expressions in cells
-# input: 
-# obj: a seurat object obtained from HGT_cluster fuction 
+# input:
+# obj: a seurat object obtained from HGT_cluster fuction
 # obj_co: a list obtained from subbmco function
 # HGT.dim: a dimension of HGT embedding
 # color1, color2: two colors coressponding to two cell types
 # output:
-# a plot show the relationship between HGT embedding and feature expression 
+# a plot show the relationship between HGT embedding and feature expression
 DEfeaturesloess <- function(obj, obj_co, HGT.dim = n, color1, color2){
   obj0 <- obj_co$obj
   I0 <- obj_co$I
   corna1 <- obj_co$cofeatures$corna1
   corna2 <- obj_co$cofeatures$corna2
-  coadt1 <- obj_co$cofeatures$coadt1 
+  coadt1 <- obj_co$cofeatures$coadt1
   coadt2 <- obj_co$cofeatures$coadt2
   corna <- c(corna1,corna2)
   coadt <- c(coadt1,coadt2)
-  
+
   m <-obj0@assays$RNA@scale.data[unique(c(unlist(corna), names(corna))),]
   df0 <- data.frame(t(m))
   colnames(df0) <- rownames(m)
@@ -404,7 +404,7 @@ DEfeaturesloess <- function(obj, obj_co, HGT.dim = n, color1, color2){
   colnames(df1) <- rownames(m)
   df1$index <-unlist(obj[[paste0('HGT_', HGT.dim)]][I0,])
   df1  <- df1[order(df1$index),]
-  
+
   rna.markers <- obj_co$rna.markers
   adt.markers <- obj_co$adt.markers
   par(pin = c(3,3))
@@ -454,7 +454,7 @@ DEfeaturesloess <- function(obj, obj_co, HGT.dim = n, color1, color2){
 # output:
 # HGT_result: a list containing requried results of HGT model as follows:
 # parameters: given parameters from user --epoch, lr, n_hid, n_heads, cuda
-# cell_hgt_matrix: cell embedding matrix 
+# cell_hgt_matrix: cell embedding matrix
 # feature_hgt_matrix : gene embedding matrix and protein embedding matrix when data_type is 'CITE';
 # attention: attention meassage for features and cells
 # data_type: 'CITE', 'scRNA_scATAC', or 'multipleRNA'
@@ -482,7 +482,7 @@ run_HGT <- function(GAS,result_dir,data_type,envPath=NULL,lr=NULL, epoch=NULL, n
   }
   print(epoch)
   if (!is.null(envPath)){use_condaenv(envPath)}
-  list_in <- assign("list_in", list(lr=lr, epoch=epoch, n_hid=n_hid, n_heads=n_heads, result_dir=result_dir, cuda=cuda, data_type=data_type, cell_gene=GAS, gene_name=rownames(GAS), cell_name=colnames(GAS)), envir = .GlobalEnv) 
+  list_in <- assign("list_in", list(lr=lr, epoch=epoch, n_hid=n_hid, n_heads=n_heads, result_dir=result_dir, cuda=cuda, data_type=data_type, cell_gene=GAS, gene_name=rownames(GAS), cell_name=colnames(GAS)), envir = .GlobalEnv)
   source_python('./arg.py')
   cell_hgt_matrix <- py$cell_matrix
   gene_hgt_matrix <- py$gene_matrix
