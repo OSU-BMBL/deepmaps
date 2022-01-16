@@ -1,53 +1,41 @@
 # DeepMAPS-docker
+This base image contains all python-related package for HGT model. Including PyTorch, PyTorch Geometric, Velocity, Lisa2, etc. This base image also contains all necessary for the R package. Including plumber, Seurat, Signac, tidyverse, Bioconductor suite (GenomicRanges, SingleCellExperiment, etc.)
 
-## Python Base image
+## Requirements
+In order to use this image you must have Docker Engine installed. Instructions for setting up Docker Engine are [available on the Docker website](https://docs.docker.com/engine/installation/).
 
-This base image contains all python-related package for HGT model. Including PyTorch, PyTorch Geometric, Velocity, Lisa2, etc.
+## Prebuilt image
+An prebuilt image is available on Docker Hub under the name [osubmbl/deepmaps-base](https://hub.docker.com/r/osubmbl/deepmaps-base). 
 
-You can pull from Docker Hub
-
-```{bash, eval=FALSE}
-docker pull osubmbl/deepmaps-python-base
+For example, you can pull the image (recommended) using:
+```bash
+$ docker pull osubmbl/deepmaps-base
 ```
 
-or build docker image yourself from `Dockerfile`
-
-```{bash, eval=FALSE}
-docker build -f Python-base.Dockerfile -t osubmbl/deepmaps-python-base .
+or you can build docker image yourself from:
+```bash
+$ docker build -f Deepmaps-base.Dockerfile -t osubmbl/deepmaps-base .
 ```
 
-Test what packages are installed
+## Usage
 
-```{bash, eval=FALSE}
-docker run osubmbl/deepmaps-python-base
+It is possible to run DeepMAPS programs inside a container using the shell command. We provide a guide to run on example data. 
+
+Starting with an interactive bash:
+```bash
+$ docker run --rm -it --init \
+  --gpus=all \
+  --ipc=host \
+  osubmbl/deepmaps-base bash
+```
+Then run the script:
+```bash
+$ bash /tmp/deepmaps/docker/test.sh
 ```
 
-Start Jupyter notebook
+The script downloads example data and run DeepMAPS. DeepMAPS applies Louvain a graph-based model to cluster cells based on the cell feature reduction matrix which returns from the HGT model, you can see the visulization from `/tmp/deepmaps/docker/test.png`
 
-```{bash, eval=FALSE}
-docker run -p 8888:8888 --gpus=all --ipc=host osubmbl/deepmaps-python-base jupyter notebook --allow-root --ip 0.0.0.0
-```
-
-## R Base image
-
-To build the docker image, enter project root directory first.
-
-This base image contains all necessary for the package. Including plumber, Seurat, Signac, tidyverse, Bioconductor suite (GenomicRanges, SingleCellExperiment, etc.)
-
-You can pull from Docker Hub
-
-```{bash, eval=FALSE}
-docker pull osubmbl/deepmaps-r-base
-```
-
-or build docker image yourself from `Dockerfile`
-
-```{bash, eval=FALSE}
-docker build -f R-base.Dockerfile -t osubmbl/deepmaps-r-base .
-```
-
-Test what packages are installed
-
-```{bash, eval=FALSE}
-docker run osubmbl/deepmaps-r-base
+Also you can start with a jupyter notebook:
+```bash
+$ docker run -p 8888:8888 --gpus=all --ipc=host osubmbl deepmaps-python-base jupyter notebook --allow-root --ip 0.0.0.0
 ```
