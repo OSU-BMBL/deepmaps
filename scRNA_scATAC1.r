@@ -817,10 +817,8 @@ Calregulon <-
       tfbs_df <- qs::qread(paste0(jaspar_path, "jaspar_hg38_500.qsave"))
     }
     else {
-      tfbs_df <- qs::qread(paste0(jaspar_path, "jaspar_mm10.qsave"))
-      tfbs_df[tfbs_df$V6 > 500,]
+      tfbs_df <- qs::qread(paste0(jaspar_path, "jaspar_mm10_500.qsave"))
     }
-    
     BA_score <-
       matrix(0, ncol(gene_peak_pro), length(unique(tfbs_df$V4)))
     colnames(BA_score) <- unique(tfbs_df$V4)
