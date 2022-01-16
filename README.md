@@ -27,7 +27,7 @@ We used a single-cell multiome ATAC+Gene expression dataset from [10X Genomics](
 - [ATAC fragments index (.tbi) (1 MB)](https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/lymph_node_lymphoma_14k_atac_fragments.tsv.gz.tbi)
 - [RNA velocity matrix (.csv.gz) (434 MB)](https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/lymph_node_lymphoma_14k_filtered_feature_bc_matrix.csv.gz)
 
-### Installation
+### Manual installation
 
 - python: 3.8
 - pytorch: 1.9.0
@@ -43,6 +43,10 @@ pip install kneed==0.7.0
 pip install seaborn==0.11.1
 pip install dill==0.3.3
 ```
+
+### Docker
+
+The DeepMAPS docker image and tutorial can be found here: https://github.com/OSU-BMBL/deepmaps/tree/master/docker
 
 ### Troubleshooting
 
