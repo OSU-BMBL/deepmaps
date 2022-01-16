@@ -33,7 +33,7 @@ Then run the script:
 $ bash /tmp/deepmaps/docker/test.sh
 ```
 
-The script downloads example data and run DeepMAPS. DeepMAPS applies Louvain a graph-based model to cluster cells based on the cell feature reduction matrix which returns from the HGT model, you can see the visulization from `/tmp/deepmaps/docker/test.png`
+The script downloads example data and run DeepMAPS. DeepMAPS applies Louvain a graph-based model to cluster cells based on the cell feature reduction matrix which returns from the HGT model, you can see the visulization from `/tmp/deepmaps/plot.png`
 
 Also you can start with a jupyter notebook:
 ```bash
