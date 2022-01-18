@@ -44,9 +44,9 @@ http://cistrome.org/~alynch/data/lisa_data/hg38_1000_2.0.h5
 Then on your machine, download LISA's required data from cistrome.org to `[your_lisa_path]`.
 
 ```bash
-LISA_PATH=[your_lisa_path]
-cd LISA_PATH
-wget http://cistrome.org/~alynch/data/lisa_data/hg38_1000_2.0.h5
+$ LISA_PATH=[your_lisa_path]
+$ cd LISA_PATH
+$ wget http://cistrome.org/~alynch/data/lisa_data/hg38_1000_2.0.h5
 ```
 
 Starting with an interactive bash (Change `[your_deepmaps_repository_path]` to your cloned DeepMAPS directory):
