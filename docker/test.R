@@ -124,7 +124,7 @@ source("/deepmaps/scRNA_scATAC1.r")
 Sys.setenv(RETICULATE_PYTHON = "/home/user/miniconda/bin/python")
 use_python("/home/user/miniconda/bin/python")
 py_config()
-lisa_path <- "/deemaps/lisa_output/"
+lisa_path <- "/deepmaps/lisa_output/"
 jaspar_path <- "/home/user/miniconda/lib/python3.8/site-packages/lisa/data/"
 
 
