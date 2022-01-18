@@ -59,7 +59,7 @@ $ docker run --rm -it --init \
 Run the following testing script if you would like to test [DeepMAPS scRNA+ATACseq workflow](https://github.com/OSU-BMBL/deepmaps/blob/master/scRNA_scATAC_analyses_tutorial.html):
 
 ```bash
-$ bash /deepmaps/docker/test.sh > test_output.txt
+$ bash /deepmaps/docker/test.sh > /deepmaps/test_output.txt
 ```
 
 The script will:
