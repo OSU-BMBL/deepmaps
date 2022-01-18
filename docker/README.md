@@ -8,7 +8,7 @@ To use this image you must have Docker Engine installed. Instructions for settin
 
 ## Prebuilt image
 
-An prebuilt image (~16.2GB) is available on Docker Hub under the name [osubmbl/deepmaps-base](https://hub.docker.com/r/osubmbl/deepmaps-base).
+An prebuilt image (~16.3GB) is available on Docker Hub under the name [osubmbl/deepmaps-base](https://hub.docker.com/r/osubmbl/deepmaps-base).
 
 For example, you can pull the image (recommended) using:
 
@@ -54,15 +54,24 @@ $ docker run --rm -it --init \
   osubmbl/deepmaps-base bash
 ```
 
-Run the following testing script if you would like to test the DeepMAPS scRNA+ATACseq workflow:
+## Test workflow
+
+Run the following testing script if you would like to test [DeepMAPS scRNA+ATACseq workflow](https://github.com/OSU-BMBL/deepmaps/blob/master/scRNA_scATAC_analyses_tutorial.html):
 
 ```bash
 $ bash /deepmaps/docker/test.sh > test_output.txt
 ```
 
-The script will download an example data and run DeepMAPS. DeepMAPS applies Louvain a graph-based model to cluster cells based on the cell feature reduction matrix which returns from the HGT model, you can check the visualization from `/deepmaps/plot.png`
+The script will:
 
-Also, you can start with a jupyter notebook if you would prefer working in an interactive UI:
+1. Download an example dataset
+2. Load and process example data
+3. Run HGT model and clustering
+4. Generate cell-type-specific regulons
+
+You may check the visualization from `/deepmaps/plot.png` and output logs when the testing script complete.
+
+Also, you can start with a jupyter notebook if you would prefer working on an interactive UI:
 
 ```bash
 $ docker run -p 8888:8888 \
