@@ -61,7 +61,7 @@ First, download the following packages from https://pytorch-geometric.com/whl/
 1. torch_cluster.whl
 2. torch_scatter.whl
 3. torch_sparse.whl
-4. torch_spline_conv.whl” ,
+4. torch_spline_conv.whl
 
 then go to the download directory and `pip install \*.whl`
 
