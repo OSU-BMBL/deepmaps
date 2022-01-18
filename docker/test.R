@@ -194,7 +194,7 @@ system(
 # Filter gene with no accessible peak in promoter
 gene_peak_pro <- AccPromoter(obj = lymph_obj, gene_peak = ATAC_gene_peak, GAS = GAS, species = 'hg38')
 
-pre_regulon_res <- Calregulon(GAS = GAS, CO = co,gene_peak_pro = gene_peak_pro, species = "hg38", jaspar_path = jaspar_path, lisa_path = lisa_path)
+pre_regulon_res <- Calregulon(GAS = GAS, co = co,gene_peak_pro = gene_peak_pro, species = "hg38", jaspar_path = jaspar_path, lisa_path = lisa_path)
 BA_score <- pre_regulon_res[[1]]
 ct_regulon_v1 <- pre_regulon_res[[2]]
 TFinGAS<- pre_regulon_res[[3]]
