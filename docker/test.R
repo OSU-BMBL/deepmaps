@@ -118,23 +118,30 @@ library(Seurat)
 library(patchwork)
 library(cluster)
 
-## Load function
+## Setup path and environment
 source("/deepmaps/scRNA_scATAC1.r")
 # set python environment
 Sys.setenv(RETICULATE_PYTHON = "/home/user/miniconda/bin/python")
 use_python("/home/user/miniconda/bin/python")
 py_config()
+lisa_path <- "/deemaps/lisa_output/"
+jaspar_path <- "/home/user/miniconda/lib/python3.8/site-packages/lisa/data/"
 
+
+# Read matched scRNA and scATAC data and quality control
 lymph_obj <- ReadData(h5Path = "/deepmaps/docker/data/lymph_node_lymphoma_14k_filtered_feature_bc_matrix.h5", data_type = "scRNA_scATAC", min_cell = 0.001, dataFormat = "h5")
 ATAC_gene_peak <- CalGenePeakScore(peak_count_matrix = lymph_obj@assays$ATAC@counts,organism = "GRCh38")
 
+# Calculate gene active score (integeation)
 velo <-"/deepmaps/docker/data/lymph_node_lymphoma_14k_filtered_feature_bc_matrix.csv"
 GAS_obj <- calculate_GAS_v1(ATAC_gene_peak = ATAC_gene_peak, obj = lymph_obj, method = "velo", veloPath = velo)
 GAS <- GAS_obj[[1]]
 lymph_obj <- GAS_obj[[2]]
 
+# Perform heterogeneous graph transformer (HGT) model on GAS matrix
 HGT_result <- run_HGT(GAS = as.matrix(GAS),result_dir='/deepmaps', data_type='scRNA_scATAC', envPath=NULL, lr=0.2, epoch=30, n_hid=128, n_heads=16)
 
+# Cluster the cells
 cell_hgt_matrix <- HGT_result[['cell_hgt_matrix']]
 rownames(cell_hgt_matrix) <- colnames(GAS)
 
@@ -167,3 +174,64 @@ DefaultAssay(lymph_obj) <- "RNA"
 png("plot.png")
 DimPlot(lymph_obj, reduction = 'umap.rna')
 dev.off()
+
+# Calculate cell cluster active gene modules and run LISA for TF infer.
+co <- get_gene_module(obj = lymph_obj, GAS = GAS, att = HGT_result[['attention']],method = 'SFP' )
+
+dir.create(lisa_path, showWarnings = F)
+write_GM(co = co, lisa_path = lisa_path)
+
+# Run LISA on generated gene modules
+system(
+  paste0(
+    "/home/user/miniconda/bin/python /deepmaps/run_lisa.py --path ",
+    lisa_path,
+    " --species ",
+    "hg38"
+  )
+)
+
+# Filter gene with no accessible peak in promoter
+gene_peak_pro <- AccPromoter(obj = lymph_obj, gene_peak = ATAC_gene_peak, GAS = GAS, species = 'hg38')
+
+pre_regulon_res <- Calregulon(GAS = GAS, CO = co,gene_peak_pro = gene_peak_pro, species = "hg38", jaspar_path = jaspar_path, lisa_path = lisa_path)
+BA_score <- pre_regulon_res[[1]]
+ct_regulon_v1 <- pre_regulon_res[[2]]
+TFinGAS<- pre_regulon_res[[3]]
+
+# Combine same TFs
+peak_TF <- uni(gene_peak_pro = gene_peak_pro, BA_score = BA_score)
+head(peak_TF[1:3,1:10])
+
+# Calculate regulatory Intensive (RI) score in cell level and infer cell type active regulon
+RI_C <- RI_cell(obj = lymph_obj, ct_regulon = ct_regulon_v1, GAS = GAS, gene_peak_pro = gene_peak_pro, peak_TF = peak_TF, graph.out = graph.out)
+head(RI_C[1:3,1:10])
+
+# Calculate regulon active score1 (RAS1)
+regulon_res <- calRAS(RI_C = RI_C, ct_regulon = ct_regulon_v1, graph.out = graph.out, TFinGAS = TFinGAS)
+RAS_CT <- regulon_res[[1]]
+RI_CT <- regulon_res[[2]]
+ct_regulon <- regulon_res[[3]]
+RAS_C1 <- regulon_res[[4]]
+head(ct_regulon[1:3])
+
+# Calculate RAS2 same topology in a row
+RAS_C2 <- CalRAS2(ct_regulon, graph.out)
+head(RAS_C2[1:3,1:10])
+
+# Calculate master TF
+masterTF <- masterFac(ct_regulon = ct_regulon, RI_CT = RI_CT)
+TF_cen <- masterTF[[1]]
+gene_cen <- masterTF[[2]]
+network <- masterTF[[3]]
+
+# Calculate cel type specific regulons
+DR <-
+  calDR(
+    ct_regulon = RAS_C2,
+    graph.out = graph.out,
+    only.pos = T,
+    lfcThres = 0.25,
+    pvalThres = 0.05
+  )
+DR[1:2]

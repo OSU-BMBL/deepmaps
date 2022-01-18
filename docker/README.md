@@ -32,61 +32,42 @@ First, clone the DeepMAPS repository to create a local copy on your computer:
 $ git clone https://github.com/OSU-BMBL/deepmaps.git
 ```
 
-Note that a database (~9GB) needs to be downloaded from cistrome.org when you run the LISA. Occasionally, a user may not be able to connect to cistrome.org from their institutional server due to some security measure. To circumvent this, one can manually install the data required to run LISA.
-
-First, use the command below to issue the download URL for the required dataset.
-
-```bash
-$ lisa download hg38 oneshot --url
-http://cistrome.org/~alynch/data/lisa_data/hg38_1000_2.0.h5
-```
-
-Then on your machine, download LISA's required data from cistrome.org to `[your_lisa_path]`.
+Note that [a database (~9GB)](https://github.com/liulab-dfci/lisa2/tree/master/docs) from [LISA](https://github.com/liulab-dfci/lisa2) and [JASPAR TFBS database](https://github.com/OSU-BMBL/deepmaps/tree/master/jaspar) are required when you run the DeepMAPS's gene regulatory network workflow. The database was not packed into Docker image to reduce the size. Here we will download the database manually from cistrome.org to `[your_lisa_path]`:
 
 ```bash
 $ LISA_PATH=[your_lisa_path]
 $ cd $LISA_PATH
 $ wget http://cistrome.org/~alynch/data/lisa_data/hg38_1000_2.0.h5
+$ wget https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/jaspar_hg38_500.qsave
 ```
 
-Starting with an interactive bash (Change `[your_deepmaps_repository_path]` to your cloned DeepMAPS directory):
+Start with an interactive bash (Change `[your_deepmaps_repository_path]` to your cloned DeepMAPS directory). The database file will be linked to LISA's installation directory:
 
 ```bash
 $ WORK_DIR=[your_deepmaps_repository_path]
 $ docker run --rm -it --init \
   -v $WORK_DIR:/deepmaps \
-  -v $LISA_PATH:/lisa_data \
+  -v $LISA_PATH:/home/user/miniconda/lib/python3.8/site-packages/lisa/data \
   --gpus=all \
   --ipc=host \
   --network=host \
   osubmbl/deepmaps-base bash
 ```
 
-The last step is to install the data in the docker package and install it to LISA's package directory:
-```bash
-$ lisa install hg38 oneshot /lisa_data/hg38_1000_2.0.h5
-```
-
-The LISA site package folder should now contain a directory called data with the downloaded dataset inside:
+Run the following testing script if you would like to test the DeepMAPS scRNA+ATACseq workflow:
 
 ```bash
-$ ls /home/user/miniconda/lib/python3.8/site-packages/lisa/data
+$ bash /deepmaps/docker/test.sh > test_output.txt
 ```
 
-Then run the test script:
+The script will download an example data and run DeepMAPS. DeepMAPS applies Louvain a graph-based model to cluster cells based on the cell feature reduction matrix which returns from the HGT model, you can check the visualization from `/deepmaps/plot.png`
 
-```bash
-$ bash /deepmaps/docker/test.sh
-```
-
-The script downloads example data and runs DeepMAPS. DeepMAPS applies Louvain a graph-based model to cluster cells based on the cell feature reduction matrix which returns from the HGT model, you can see the visualization from `/deepmaps/plot.png`
-
-Also, you can start with a jupyter notebook:
+Also, you can start with a jupyter notebook if you would prefer working in an interactive UI:
 
 ```bash
 $ docker run -p 8888:8888 \
     -v $WORK_DIR:/deepmaps \
-    -v $LISA_PATH:/lisa_data \
+    -v $LISA_PATH:/home/user/miniconda/lib/python3.8/site-packages/lisa/data \
     --gpus=all \
     --network=host \
     --ipc=host  osubmbl/deepmaps-base \
