@@ -45,7 +45,7 @@ Then on your machine, download LISA's required data from cistrome.org to `[your_
 
 ```bash
 $ LISA_PATH=[your_lisa_path]
-$ cd LISA_PATH
+$ cd $LISA_PATH
 $ wget http://cistrome.org/~alynch/data/lisa_data/hg38_1000_2.0.h5
 ```
 
