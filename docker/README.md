@@ -38,7 +38,7 @@ Note that [a database (~9GB)](https://github.com/liulab-dfci/lisa2/tree/master/d
 $ LISA_PATH=[your_lisa_path]
 $ cd $LISA_PATH
 $ wget http://cistrome.org/~alynch/data/lisa_data/hg38_1000_2.0.h5
-$ wget https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/jaspar_hg38_500.qsave
+$ wget https://bmblx.bmi.osumc.edu/downloadFiles/deepmaps/jaspar_hg38_500.qsave
 ```
 
 Start with an interactive bash (Change `[your_deepmaps_repository_path]` to your cloned DeepMAPS directory). The database file will be linked to LISA's installation directory:
