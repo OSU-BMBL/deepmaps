@@ -173,72 +173,70 @@ pre code {
 
 <div id="install-the-environment-of-deepmaps-python-environmet" class="section level2">
 <h2>Install the environment of DeepMaps (python environmet)</h2>
-<div id="version-information" class="section level3">
-<h3>Version information</h3>
+<div id="version-information-for-case-study" class="section level3">
+<h3>Version information for case study</h3>
 <p>python: 3.8.5 pytorch: 1.9.1 torch-geometric: 2.0.1 NVIDIA Driver Version: 450.102.04<br />
-CUDA Version: 11.0 GPU: 2x A100-PCIE-40GB System: Red Hat Enterprise Linux release 8.3 (Ootpa)</p>
+CUDA Version: 11.0 GPU: 2x A100-PCIE-40GB (case) System: Red Hat Enterprise Linux release 8.3 (Ootpa) Note: the result is influenced by GPU. Same GPUs have same results.</p>
 </div>
 <div id="how-to-install" class="section level3">
 <h3>How to install</h3>
-<p>pip install -r requirements.txt</p>
-<p>or</p>
-<p>conda env create -f freeze.yml</p>
+<p>README</p>
 </div>
 <div id="parameters-introduction-of-hgt-model" class="section level3">
 <h3>Parameters Introduction of HGT Model</h3>
-<p><span style="background-color:#E6E6E6;font-size:5px">optimizer</span>: optimizer. The value is in {‘sgd’,‘adam’,‘adamw’,‘adagrad’}. We fixed the value at ‘adamw’.<br />
-<span style="background-color:#E6E6E6;font-size:5px">rep</span>: Achieve reproducibility by precision truncation when <span style="background-color:#E6E6E6;font-size:5px">rep</span> is ‘T’. We fixed the value at ‘T’.<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_hid</span>: Number of hidden dimension per head. The value is an integer divisible by nhead.<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_heads</span>: Number of head. The value is an integer.<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_layers</span>: Number of HGT layers. The value is an integer.<br />
-<span style="background-color:#E6E6E6;font-size:5px">sample_depth</span>: How many numbers to sample the graph. The value is an integer.<br />
-<span style="background-color:#E6E6E6;font-size:5px">sample_width</span>: How many nodes to be sampled per layer per type. The value is an integer.<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_batch</span>: Number of batch (sampled graphs) for each epoch. The value is an integer.<br />
-<span style="background-color:#E6E6E6;font-size:5px">batch_size</span>: Number of output nodes for training. The value is an integer.<br />
-<span style="background-color:#E6E6E6;font-size:5px">factor</span>: lr attenuation factor. The value is an float less than 1. We fixed the value at 0.5.<br />
-<span style="background-color:#E6E6E6;font-size:5px">lr</span>: Learning rate. The value is a float.<br />
-<span style="background-color:#E6E6E6;font-size:5px">epoch</span>: An epoch refers to one cycle through the full training dataset. The value is an integer</p>
+<p><span style="background-color:#E6E6E6">optimizer</span>: optimizer. The value is in {‘sgd’,‘adam’,‘adamw’,‘adagrad’}. We fixed the value at ‘adamw’.<br />
+<span style="background-color:#E6E6E6">rep</span>: Achieve reproducibility by precision truncation when <span style="background-color:#E6E6E6">rep</span> is ‘T’. We fixed the value at ‘T’.<br />
+<span style="background-color:#E6E6E6">n_hid</span>: Number of hidden dimension per head. The value is an integer divisible by nhead.<br />
+<span style="background-color:#E6E6E6">n_heads</span>: Number of head. The value is an integer.<br />
+<span style="background-color:#E6E6E6">n_layers</span>: Number of HGT layers. The value is an integer.<br />
+<span style="background-color:#E6E6E6">sample_depth</span>: How many numbers to sample the graph. The value is an integer.<br />
+<span style="background-color:#E6E6E6">sample_width</span>: How many nodes to be sampled per layer per type. The value is an integer.<br />
+<span style="background-color:#E6E6E6">n_batch</span>: Number of batch (sampled graphs) for each epoch. The value is an integer.<br />
+<span style="background-color:#E6E6E6">batch_size</span>: Number of output nodes for training. The value is an integer.<br />
+<span style="background-color:#E6E6E6">factor</span>: lr attenuation factor. The value is an float less than 1. We fixed the value at 0.5.<br />
+<span style="background-color:#E6E6E6">lr</span>: Learning rate. The value is a float.<br />
+<span style="background-color:#E6E6E6">epoch</span>: An epoch refers to one cycle through the full training dataset. The value is an integer</p>
 </div>
 <div id="the-default-parameters-for-cite-seq-analyses" class="section level3">
 <h3>The default parameters for Cite-seq analyses</h3>
-<p><span style="background-color:#E6E6E6;font-size:5px">n_hid</span>: 104<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_heads</span>: 13<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_layers</span>: 4<br />
-<span style="background-color:#E6E6E6;font-size:5px">sample_depth</span>: 4<br />
-<span style="background-color:#E6E6E6;font-size:5px">sample_width</span>: 8<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_batch</span>: 64<br />
-<span style="background-color:#E6E6E6;font-size:5px">batch_size</span>: 64<br />
-<span style="background-color:#E6E6E6;font-size:5px">lr</span>: 0.1<br />
-<span style="background-color:#E6E6E6;font-size:5px">epoch</span>: 50</p>
+<p><span style="background-color:#E6E6E6">n_hid</span>: 104<br />
+<span style="background-color:#E6E6E6">n_heads</span>: 13<br />
+<span style="background-color:#E6E6E6">n_layers</span>: 4<br />
+<span style="background-color:#E6E6E6">sample_depth</span>: 4<br />
+<span style="background-color:#E6E6E6">sample_width</span>: 8<br />
+<span style="background-color:#E6E6E6">n_batch</span>: 64<br />
+<span style="background-color:#E6E6E6">batch_size</span>: 64<br />
+<span style="background-color:#E6E6E6">lr</span>: 0.1<br />
+<span style="background-color:#E6E6E6">epoch</span>: 50</p>
 </div>
 <div id="the-default-parameters-for-matched-scrna-seq-and-scatac_seq-analyses" class="section level3">
 <h3>The default parameters for matched scRNA-seq and scATAC_seq analyses</h3>
-<p><span style="background-color:#E6E6E6;font-size:5px">n_hid</span>: 128<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_heads</span>: 16<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_layers</span>: 2<br />
-<span style="background-color:#E6E6E6;font-size:5px">sample_depth</span>: 4<br />
-<span style="background-color:#E6E6E6;font-size:5px">sample_width</span>: 8<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_batch</span>: 50<br />
-<span style="background-color:#E6E6E6;font-size:5px">batch_size</span>: 110<br />
-<span style="background-color:#E6E6E6;font-size:5px">lr</span>: 0.1<br />
-<span style="background-color:#E6E6E6;font-size:5px">epoch</span>: 100</p>
+<p><span style="background-color:#E6E6E6">n_hid</span>: 128<br />
+<span style="background-color:#E6E6E6">n_heads</span>: 16<br />
+<span style="background-color:#E6E6E6">n_layers</span>: 2<br />
+<span style="background-color:#E6E6E6">sample_depth</span>: 4<br />
+<span style="background-color:#E6E6E6">sample_width</span>: 8<br />
+<span style="background-color:#E6E6E6">n_batch</span>: 50<br />
+<span style="background-color:#E6E6E6">batch_size</span>: 110<br />
+<span style="background-color:#E6E6E6">lr</span>: 0.1<br />
+<span style="background-color:#E6E6E6">epoch</span>: 100</p>
 </div>
 <div id="the-default-parameters-for-multiple-scrna-seq-analyses" class="section level3">
 <h3>The default parameters for multiple scRNA-seq analyses</h3>
-<p><span style="background-color:#E6E6E6;font-size:5px">n_hid</span>: 104<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_heads</span>: 13<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_layers</span>: 2<br />
-<span style="background-color:#E6E6E6;font-size:5px">sample_depth</span>: 5<br />
-<span style="background-color:#E6E6E6;font-size:5px">sample_width</span>: 11<br />
-<span style="background-color:#E6E6E6;font-size:5px">n_batch</span>: 80<br />
-<span style="background-color:#E6E6E6;font-size:5px">batch_size</span>: 60 <span style="background-color:#E6E6E6;font-size:5px">lr</span>: 0.1<br />
-<span style="background-color:#E6E6E6;font-size:5px">epoch</span>: 100</p>
-<p>Above are default parameters for different data type, in which <span style="background-color:#E6E6E6;font-size:5px">n_hid</span>, <span style="background-color:#E6E6E6;font-size:5px">n_heads</span>, <span style="background-color:#E6E6E6;font-size:5px">lr</span>, <span style="background-color:#E6E6E6;font-size:5px">epoch</span> can be changed by users in R fucntion, <span style="background-color:#E6E6E6;font-size:5px">run_HGT</span>, and others can be changed in <span style="background-color:#E6E6E6;font-size:5px">arg.py</span> file.</p>
+<p><span style="background-color:#E6E6E6">n_hid</span>: 104<br />
+<span style="background-color:#E6E6E6">n_heads</span>: 13<br />
+<span style="background-color:#E6E6E6">n_layers</span>: 2<br />
+<span style="background-color:#E6E6E6">sample_depth</span>: 5<br />
+<span style="background-color:#E6E6E6">sample_width</span>: 11<br />
+<span style="background-color:#E6E6E6">n_batch</span>: 80<br />
+<span style="background-color:#E6E6E6">batch_size</span>: 60 <span style="background-color:#E6E6E6">lr</span>: 0.1<br />
+<span style="background-color:#E6E6E6">epoch</span>: 100</p>
+<p>Above are default parameters for different data type, in which <span style="background-color:#E6E6E6">n_hid</span>, <span style="background-color:#E6E6E6">n_heads</span>, <span style="background-color:#E6E6E6">lr</span>, <span style="background-color:#E6E6E6">epoch</span> can be changed by users in R fucntion, <span style="background-color:#E6E6E6">run_HGT</span>, and others can be changed in <span style="background-color:#E6E6E6">arg.py</span> file.</p>
 </div>
 </div>
 <div id="lisa-install" class="section level2">
 <h2>LISA install</h2>
-<p>$ conda create –name lisa $ conda activate hgt1 $ conda install -c liulab-dfci lisa2 Other install ways and more details can see <a href="https://github.com/liulab-dfci/lisa2">here</a> run_lisa.py can see <a href="https://github.com/OSU-BMBL/deepmaps">here</a>.</p>
+<p>$ conda create –name lisa $ conda activate hgt1 $ conda install -c liulab-dfci lisa2 Other install ways and more details can see <a href="https://github.com/liulab-dfci/lisa2">here</a></p>
 </div>
 <div id="maestro-install" class="section level2">
 <h2>MAESTRO install</h2>
