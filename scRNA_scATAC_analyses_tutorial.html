@@ -166,7 +166,7 @@ pre code {
 
 <h1 class="title toc-ignore">“DeepMAPS-Guided matched scRNA-seq and scATAC_seq analyses tutorial”</h1>
 <h4 class="author">Xiaoying Wang</h4>
-<h4 class="date">2021/11/14</h4>
+<h4 class="date">2022/1/19</h4>
 
 </div>
 
@@ -439,7 +439,7 @@ gene_peak_pro &lt;- AccPromoter(obj = lymph_obj, gene_peak = ATAC_gene_peak, GAS
 # BA_score a TF binding affinity matrix with TF * peak, the elements in the matrix is the binding power of TF to peak 
 # ct_regulon: candidate cell type active regulon
 # TFinGAS: TRUE / FALSE, if number of the intersection of candidate TF from LISA and gene in GAS &gt; 50 TFinGAS will be true, else it will be false
-pre_regulon_res &lt;- Calregulon(GAS = GAS, CO = co,gene_peak_pro = gene_peak_pro, species = &quot;hg38&quot;, jaspar_path = &quot;/scratch/deepmaps/jaspar/&quot;, lisa_path = lisa_path)
+pre_regulon_res &lt;- Calregulon(GAS = GAS, co = co, gene_peak_pro = gene_peak_pro, species = &quot;hg38&quot;, jaspar_path = &quot;/scratch/deepmaps/jaspar/&quot;, lisa_path = lisa_path)
 BA_score &lt;- pre_regulon_res[[1]]
 ct_regulon_v1 &lt;- pre_regulon_res[[2]]
 TFinGAS&lt;- pre_regulon_res[[3]]</code></pre>
@@ -473,6 +473,7 @@ head(peak_TF[1:3,1:10])</code></pre>
 #  graph.out: a factor variable. The predict cell cluster which return from get_gene_module function
 #output:
 #  RI_C: a regulatory intensive matrix with TF-gene pair * cell, the element means the intensity of TF to gene in each cell
+graph.out &lt;- as.factor(lymph_obj$seurat_clusters)
 RI_C &lt;- RI_cell(obj = lymph_obj, ct_regulon = ct_regulon_v1, GAS = GAS, gene_peak_pro = gene_peak_pro, peak_TF = peak_TF, graph.out = graph.out)
 head(RI_C[1:3,1:10])</code></pre>
 <pre><code>##            [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
