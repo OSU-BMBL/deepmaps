@@ -169,6 +169,7 @@ lymph_obj <-
                 reduction = "HGT",
                 dims = 1:ncol(cell_hgt_matrix))
 lymph_obj <- FindClusters(lymph_obj, resolution = 1)
+graph.out <- as.factor(lymph_obj$seurat_clusters)
 
 DefaultAssay(lymph_obj) <- "RNA"
 png("plot.png")
