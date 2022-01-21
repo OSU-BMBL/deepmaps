@@ -173,7 +173,7 @@ pre code {
 
 <div id="read-matched-scrna-and-scatac-data-and-quality-control" class="section level2">
 <h2>Read matched scRNA and scATAC data and quality control</h2>
-<p>For this tutorial, we will be analyzing the dataset of Fresh Frozen Lymph Node with B-cell Lymphoma (14k sorted nuclei) freely available from 10X Genomics. 14,566 single cells that were sequenced on the Illumina NextSeq 500. The raw data can be found <a href="https://www.10xgenomics.com/resources/datasets/fresh-frozen-lymph-node-with-b-cell-lymphoma-14-k-sorted-nuclei-1-standard-2-0-0">here</a>. We start by reading the data. The <span style="background-color:#E6E6E6">ReadData</span> function reads the .h5 file from given h5Path, and removes the peak/gene if the value in the gene / peak with more than min_cell cell is equal to zero, returning a Seurat object. The Seurat object contain two count matrix which store in <span style="background-color:#E6E6E6">lymph_obj[[‘RNA’]]@counts</span> and <span style="background-color:#E6E6E6">lymph_obj[[‘ATAC’]]@counts</span>. DeepMAPS will removed outlier cells automatically. We will identify if a cell is an outlier based on the scRNA counts matrix, scATAC count matrix, and mitochondrial genes. And the outlier cells will be removed in the Seurat object.</p>
+<p>For this tutorial, we will be analyzing the dataset of Fresh Frozen Lymph Node with B-cell Lymphoma (14k sorted nuclei) freely available from 10X Genomics. 14,566 single cells were sequenced on the Illumina NextSeq 500. The raw data can be found <a href="https://www.10xgenomics.com/resources/datasets/fresh-frozen-lymph-node-with-b-cell-lymphoma-14-k-sorted-nuclei-1-standard-2-0-0">here</a>. We start by reading the data. The <span style="background-color:#E6E6E6">ReadData</span> function reads the .h5 file from given h5Path and removes the peak/gene if the value in the gene/peak with more than min_cell cell is equal to zero, returning a Seurat object. The Seurat object contains two count matrices stored in <span style="background-color:#E6E6E6">lymph_obj[[‘RNA’]]@counts</span> and <span style="background-color:#E6E6E6">lymph_obj[[‘ATAC’]]@counts</span>. DeepMAPS will automatically remove outlier cells. We will identify if a cell is an outlier based on the scRNA count matrix, scATAC count matrix, and mitochondrial genes. And the outlier cells will be removed in the Seurat object.</p>
 <pre class="r"><code>## Load function
 source(&quot;/home/wan268/hgt/RNA_ATAC/scRNA_scATAC1.r&quot;)
 # set python environment
@@ -204,7 +204,7 @@ lymph_obj </code></pre>
 </div>
 <div id="calculate-peak-gene-regulatory-potential-matrix" class="section level2">
 <h2>Calculate peak-gene regulatory potential matrix</h2>
-<p>After removing outlier cells from the dataset, the next step is to calculate the regulatory score from scATAC count matrix which is stored in <span style="background-color:#E6E6E6">lymph_obj@assays$ATAC@counts’</span> based on the package <a href="https://github.com/liulab-dfci/MAESTRO">MAESTRO</a>. The reference genome default as CRCh38, if the mouse data you have, the species can be set as GRCm38. After calculating the gene active score step, the ATAC_gene_peak matrix will be returned. All peaks in scATAC data will be calculated a regulatory score with genes provided by the reference genome. Some solutions of install package in R and python have been summarized in README.</p>
+<p>After removing outlier cells from the dataset, the next step is to calculate the regulatory score from the scATAC count matrix stored in <span style="background-color:#E6E6E6">lymph_obj@assays$ATAC@counts’</span> based on the package <a href="https://github.com/liulab-dfci/MAESTRO">MAESTRO</a>. The reference genome default as CRCh38. If the mouse data you have, the species can be set as GRCm38. After calculating the gene active score step, the ATAC_gene_peak matrix will be returned. All peaks in scATAC data will be calculated a regulatory score with genes provided by the reference genome. Some solutions of install package in R and python have been summarized in README.</p>
 <pre class="r"><code>##&#39; Calculate peak-gene regulatory potential matrix 
 # input:
 #  peak_count_matrix: a peak_count matrix from scATAC-seq with peak * cell which return from filterCell function
@@ -217,7 +217,7 @@ ATAC_gene_peak &lt;- CalGenePeakScore(peak_count_matrix = lymph_obj@assays$ATAC@
 </div>
 <div id="calculate-gene-active-score-integeation" class="section level2">
 <h2>Calculate gene active score (integeation)</h2>
-<p>Next, to combine the expression information and accessibility information, we transform scATAC count matrix to gene level with gene_cell matrix, integrate expression matrix <span style="background-color:#E6E6E6">lymph_obj@assays$ATAC@counts’</span> and scATAC transfer matrix based on velocity matrix. The velocity matrix needs to be provided by the users. The calculate method and provide format are introduced in <a href="%22https://scvelo.readthedocs.io/%22">scvelo</a>. If you don’t want to calculate velocity or you don’t have a fastq file, you can choose another integration method called ‘wnn’ and the veloPath can be set NULL. Then the integration matrix gene active score will be returned. The row is the gene, the column is the cell and the value in the matrix is the gene active score.</p>
+<p>Next, to combine the expression information and accessibility information, we transform the scATAC count matrix to gene level with gene_cell matrix and integrate the expression matrix <span style="background-color:#E6E6E6">lymph_obj@assays$ATAC@counts’</span> and the scATAC transfer matrix based on the velocity matrix. The velocity matrix needs to be provided by the users. The calculate method and provide format are introduced in <a href="%22https://scvelo.readthedocs.io/%22">scvelo</a>. If you don’t want to calculate velocity or you don’t have a fastq file, you can choose another integration method called ‘wnn’ and the veloPath can be set NULL. Then the integration matrix gene active score will be returned. The row is the gene, the column is the cell and the value in the matrix is the gene active score.</p>
 <pre class="r"><code>## Calculate gene active score matrix 
 #input:
 #  ATAC_gene_peak: a matrix with gene * peak which return from CalGenePeakScore fucntion
@@ -236,7 +236,7 @@ lymph_obj &lt;- GAS_obj[[2]]</code></pre>
 </div>
 <div id="perform-heterogeneous-graph-transformer-hgt-model-on-gas-matrix" class="section level2">
 <h2>Perform heterogeneous graph transformer (HGT) model on GAS matrix</h2>
-<p>Next, we apply HGT, a deep learning framework on the GAS matrix. Four folders (cell, gene, model, att) need to be built in result_dir path. For scRNA_scATAC data, the <span style="background-color:#E6E6E6">data_type’</span> should be set “scRNA_scATAC”, and the joint embedding of gene and cell from HGT will be saved in the result_dir path/gene(/cell). The attention of a gene to a cell is stored in result_dir/att, and the trained model is stored in the result_dir/model. All the results are stored in R variable as a list HGT_result. The parameters in deep learning are set as default. All the results are stored in R variable as a list HGT_result. The parameters in deep learning are set as default. The <span style="background-color:#E6E6E6">lr</span>, <span style="background-color:#E6E6E6">n_hid</span>, <span style="background-color:#E6E6E6">n_heads</span>,<span style="background-color:#E6E6E6">epoch</span> can be changed by users. The introduction of each parameter in deep learning are provide in <a href="%22https://github.com/OSU-BMBL/deepmaps%22">Tutorial_install_package</a>.</p>
+<p>Next, we apply HGT, a deep learning framework, to the GAS matrix. Four folders (cell, gene, model, att) should be built in the result_dir path. For scRNA_scATAC data, the <span style="background-color:#E6E6E6">data_type’</span> should be set “scRNA_scATAC,” and the joint embedding of gene and cell from HGT will be saved in the result_dir path/gene(/cell). The attention of the gene to the cell is stored in the /result_dir/att. The trained model is stored in the /result_dir/model. All the results are stored in the R variable as a list HGT_result. The parameters in deep learning are set as default. All the results are stored in the R variable as a list HGT_result. The parameters in deep learning are set as default. The <span style="background-color:#E6E6E6">lr</span>, <span style="background-color:#E6E6E6">n_hid</span>, <span style="background-color:#E6E6E6">n_heads</span>,<span style="background-color:#E6E6E6">epoch</span> can be changed by users. The introduction of each parameter in deep learning are provide in <a href="%22https://github.com/OSU-BMBL/deepmaps%22">Tutorial_install_package</a>.</p>
 <pre class="r"><code># required package -- reticulate
 # input:
 #  GAS: the spliced and normalized matrix obtained from CLR function
@@ -262,7 +262,7 @@ HGT_result &lt;- run_HGT(GAS = as.matrix(GAS),result_dir=&#39;/home/wan268/hgt/R
 </div>
 <div id="cluster-the-cells" class="section level2">
 <h2>Cluster the cells</h2>
-<p>After running the HGT model, DeepMAPS applies Louvain a graph-based model to cluster cells based on the cell feature reduction matrix which returns from the HGT model (stored in <span style="background-color:#E6E6E6">HGT_result[[‘cell_hgt_matrix’]]</span>).</p>
+<p>After running the HGT model, DeepMAPS applies Louvain, a graph-based model, to cluster cells based on the cell feature reduction matrix, which returns from the HGT model (stored in <span style="background-color:#E6E6E6">HGT_result[[‘cell_hgt_matrix’]]</span>).</p>
 <pre class="r"><code>cell_hgt_matrix &lt;- HGT_result[[&#39;cell_hgt_matrix&#39;]]
 rownames(cell_hgt_matrix) &lt;- colnames(GAS)
 
@@ -316,7 +316,7 @@ FeaturePlot(
 </div>
 <div id="the-coverage-plot" class="section level2">
 <h2>The coverage plot</h2>
-<p>For this plot, users should provide the fragments file, and define the reference genome. The default assay in Seurat object should be set as ATAC matrix.</p>
+<p>Users should provide the fragments file and define the reference genome for this plot. The default assay in the Seurat object should be set as scATAC matrix.</p>
 <pre class="r"><code>DefaultAssay(lymph_obj) &lt;- &quot;ATAC&quot;
 anno &lt;- qs::qread(paste0(&quot;/home/wan268/hgt/RNA_ATAC/&quot;, &quot;hg38_annotations.qsave&quot;))
 Annotation(lymph_obj) &lt;- anno
@@ -380,7 +380,7 @@ DimPlot(lymph_obj, reduction = &#39;umap.rna&#39;)</code></pre>
 </div>
 <div id="calculate-cell-cluster-active-gene-modules-and-run-lisa-for-tf-infer." class="section level2">
 <h2>Calculate cell cluster active gene modules and run LISA for TF infer.</h2>
-<p>To find the cell cluster biological meaningful gene module, the gene reduction matrix(stored in <span style="background-color:#E6E6E6">HGT_result[[‘feature_hgt_matrix’]]’</span> ), and attention value of gene to cell (stored in <span style="background-color:#E6E6E6">HGT_result[[‘attention’]]’</span> ), need to be provide, which also obtain from HGT model. Then the clustering result and cell type active biological gene module will be stored in co and graph.out variables. To infer TF by <a href="https://github.com/liulab-dfci/lisa2">LISA</a>, we write the biological gene module in the <span style="background-color:#E6E6E6">lisa_path’</span>. The run_lisa.py (“aaa”) code is <a href="%22aaa%22">here</a></p>
+<p>To find the cell cluster biological meaningful gene module, the gene reduction matrix (stored in <span style="background-color:#E6E6E6">HGT_result[[‘feature_hgt_matrix’]]’</span> ), and attention value of gene to cell (stored in <span style="background-color:#E6E6E6">HGT_result[[‘attention’]]’</span> ), need to be provided, which also obtained from HGT model. Then the clustering result and cell type active biological gene module will be stored in co and graph.out variables. To infer TF by <a href="https://github.com/liulab-dfci/lisa2">LISA</a>, we write the biological gene module in the <span style="background-color:#E6E6E6">lisa_path’</span>. The run_lisa.py code is <a href="%22https://github.com/OSU-BMBL/deepmaps%22">here</a></p>
 <pre class="r"><code># CT active gene modules calculation
 # input:
 #  obj: a seurat object
@@ -412,7 +412,7 @@ system(
 </div>
 <div id="filter-gene-with-no-accessible-peak-in-promoter" class="section level2">
 <h2>Filter gene with no accessible peak in promoter</h2>
-<p>Next, consider the accessibility of the promoter region of each gene, the gene will be filtered if no accessible peak in the promoter. If the data belongs to human species, the <span style="background-color:#E6E6E6">species’</span> parameter is set to “hg38”. If the data belongs to mouse species, the <span style="background-color:#E6E6E6">species’</span> parameter is set to “mm10”. Then gene_peak_pro will be return by the function <span style="background-color:#E6E6E6">AccPromoter()[[‘feature_hgt_matrix’]]’</span>.</p>
+<p>Next, consider the accessibility of the promoter region of each gene. The gene will be filtered if there is no accessible peak in the promoter. If the data belongs to human species, the <span style="background-color:#E6E6E6">species’</span> parameter is set to “hg38”. If the data belongs to mouse species, the <span style="background-color:#E6E6E6">species’</span> parameter is set to “mm10”. Then gene_peak_pro will be returned by the function <span style="background-color:#E6E6E6">AccPromoter()[[‘feature_hgt_matrix’]]’</span>.</p>
 <pre class="r"><code># Filter gene with no accessible peak in promoter 
 # input:
 #  lymph_obj: a seurat object which return from filterCell function
@@ -426,7 +426,7 @@ gene_peak_pro &lt;- AccPromoter(obj = lymph_obj, gene_peak = ATAC_gene_peak, GAS
 </div>
 <div id="infer-candicate-cell-type-active-regulons" class="section level2">
 <h2>Infer candicate cell type active regulons</h2>
-<p>We use TF binding site database from <a href="http://expdata.cmmt.ubc.ca/JASPAR/downloads/UCSC_tracks/2020/">JASPAR</a> to infer candidate cell type active regulon and calculate binding affinity from TF to peak.</p>
+<p>We use TF binding site database from <a href="http://expdata.cmmt.ubc.ca/JASPAR/downloads/UCSC_tracks/2020/">JASPAR</a> to infer candidate cell type active regulon and calculate binding affinity from TF to the peak.</p>
 <pre class="r"><code>## infer ct active regulons
 # input:
 # GAS: the GAS matrix with gene * cell which return calculate_GAS function
@@ -483,7 +483,7 @@ head(RI_C[1:3,1:10])</code></pre>
 </div>
 <div id="calculate-regulon-active-score1-ras1" class="section level2">
 <h2>Calculate regulon active score1 (RAS1)</h2>
-<p>Next, to analyze cell type specific regulon, we define RAS1 which calculate regulons active score in different topology with the same TF in different cell type.</p>
+<p>Next, to analyze cell type-specific regulon, we define RAS1, which calculates regulon’s active score in different topologies with the same TF in different cell types.</p>
 <pre class="r"><code># input:
 #  RI_C: a regulatory intensive matrix with TF-gene pair * cell, the element means the intensity of TF to gene in each cell
 #  ct_regulon: cell type active regulon
@@ -592,7 +592,7 @@ head(ct_regulon[1:3])</code></pre>
 </div>
 <div id="calculate-ras2-same-topology-in-a-row" class="section level2">
 <h2>Calculate RAS2 same topology in a row</h2>
-<p>Next, to analyses cell type specific regulon, we define RAS2 which calculate regulon active score in the same topology with the same TF in different cell type.</p>
+<p>Next, to analyze cell type-specific regulon, we define RAS2, which calculates active regulon score in the same topology with the same TF in different cell types.</p>
 <pre class="r"><code>##calculate RAS(2) same topology in a row
 # calculate regulon active score in cell level / cell type level
 # input:
@@ -607,7 +607,7 @@ head(RAS_C2[1:3,1:10])</code></pre>
 </div>
 <div id="calculate-master-tf" class="section level2">
 <h2>Calculate master TF</h2>
-<p>Next, we calculate TF/genes’ centrality score to define the master TF/gene in each cell type and the network in each cell type is also provided which is display as an adjacent matrix.</p>
+<p>Next, we calculate TF/genes’ centrality score to define the master TF/gene in each cell type, and the network in each cell type is also provided, which is displayed as an adjacent matrix.</p>
 <pre class="r"><code>##calculate master TF
 #find master TF and master gene, build a cell type gene regulatory network
 #input:
@@ -640,8 +640,8 @@ network &lt;- masterTF[[3]]</code></pre>
 
 DR &lt;-
   calDR(
-    ct_regulon = RAS_C2,
-    graph.out = graph.out,
+    RAS_C2,
+    graph.out,
     only.pos = T,
     lfcThres = 0.25,
     pvalThres = 0.05
