@@ -117,11 +117,11 @@ class HGTConv(MessagePassing):
             Softmax based on target node's id (edge_index_i). Store attention value in self.att for later visualization.
         '''
         #self.att = self.res_att
-        #attention
+        #attention 
         #self.att =softmax(self.res_att, edge_index_i)
         #embedding in each layer
-        res =res_msg * softmax(self.res_att, edge_index_i).view(-1, self.n_heads, 1)
-        
+        #res =res_msg * softmax(self.res_att, edge_index_i).view(-1, self.n_heads, 1)
+        res =res_msg * softmax(self.res_att.view(-1, self.n_heads, 1), edge_index_i)
         #self.res_att=self.att
         
         return res.view(-1, self.out_dim)
