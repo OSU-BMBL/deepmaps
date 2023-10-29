@@ -701,6 +701,7 @@ for epoch in np.arange(args.epoch):
         if (args.loss == "cross"):
             from torch_geometric.utils import remove_self_loops
             from torch_geometric.utils import add_self_loops
+            from torch_geometric.utils import negative_sampling
 
             EPS = 1e-15
             value = (node_rep[edge_index[0]] *
