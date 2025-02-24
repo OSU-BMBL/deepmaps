@@ -10,5 +10,5 @@ tfbs_df <- qs::qread("jaspar_hg38_500.qsave")
 
 ## Download
 
-- hg38 (221 MB): https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/jaspar_hg38_500.qsave
-- mm10 (10 MB): https://bmbl.bmi.osumc.edu/downloadFiles/deepmaps/jaspar_mm10_500.qsave
+- hg38 (221 MB): https://bmblx.bmi.osumc.edu/downloadFiles/deepmaps/jaspar_hg38_500.qsave
+- mm10 (10 MB): https://bmblx.bmi.osumc.edu/downloadFiles/deepmaps/jaspar_mm10_500.qsave
